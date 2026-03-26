@@ -29,6 +29,7 @@ font-family: 'IBM Plex Mono', monospace;
 /* Área de Upload */
 .linha-upload {
   display: flex;
+    flex-wrap: wrap;
   align-items: center;
   gap: 14px;
   margin-bottom: 28px;
@@ -46,6 +47,9 @@ font-family: 'IBM Plex Mono', monospace;
   transition: background 0.15s;
   white-space: nowrap;
   color: #1a1a1a;
+  flex: 1; 
+  min-width: 120px;  
+
 }
 
 .botao-padrao:hover { 
