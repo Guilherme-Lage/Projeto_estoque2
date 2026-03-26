@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Conferidor de Estoque</title>
+<link rel="stylesheet" href="style.css">
+<script src="main.js" defer></script>
+<script src="https://unpkg.com"></script>
+<body>
+
+<div class="container">
+  <h1>Conferidor de Estoque Hontec</h1>
+ 
+  <div class="linha-upload">
+    <!-- Botão Principal -->
+    <button class="botao-padrao" onclick="document.getElementById('entrada-arquivo').click()">Selecionar arquivo</button>
+
+    <!-- Botão de Limpar (Aparece só quando tem arquivo) -->
+    <button id="botao-limpar" class="botao-padrao botao-perigo" onclick="limparTabela()" style="display:none;">Limpar Lista</button>
+
+    <span class="legenda-upload" id="legenda-arquivo">Insira o .txt do Apollo</span>
+    
+    <!-- Input escondido -->
+    <input type="file" id="entrada-arquivo" accept=".txt,.html" onchange="carregarArquivo(this)">
+  </div>
+  
+  <!-- Informações extras do arquivo -->
+  <div class="info-romaneio" id="info-romaneio"></div>
+
+  <!-- Buscar codigo -->
+  <div class="linha-upload" style="flex-wrap: wrap;">
+  <input type="text" id="busca-codigo" placeholder="Digite o código ou peça..." 
+         onkeyup="filtrarTabela()" class="botao-padrao" style="flex: 1; text-align: left;">
+  
+  <button id="btn-ocultar" class="botao-padrao" onclick="alternarVisibilidade()">
+    Ocultar Conferidos
+  </button>
+
+  <!-- Contador de progresso -->
+  <div class="secao-contador" id="secao-contador">
+    <span id="contagem-conferidos">0</span> de <span id="contagem-total">0</span> itens conferidos
+  </div>
+ 
+  <!-- Estrutura da Tabela -->
+  <div class="envoltório-tabela">
+    <table>
+      <thead>
+        <tr>
+          <th>Locação</th>
+          <th>Qtd</th>
+          <th>Código</th>
+          <th>Descrição</th>
+          <th>OK</th>
+        </tr>
+      </thead>
+      <tbody id="corpo-tabela">
+        <tr>
+          <td colspan="5" class="estado-vazio">
+            <p>Nenhum arquivo carregado</p>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+
+ 
+</body>
+</html>
