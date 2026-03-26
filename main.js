@@ -7,7 +7,7 @@ function carregarArquivo(input) {
         salvarNoHistorico();
     }
 
-    // Acessa o primeiro arquivo da lista [0]
+
     const arquivo = input.files[0];
 
     if (!arquivo) return;
@@ -36,7 +36,7 @@ function processarTexto(texto) {
         }
     }
 
-    // Expressão regular para capturar os dados entre as barras |
+   
     const regex = /\|\s+([\d.A-Za-z]+)\s+([\d,]+)\s+(\d+)\s+(.*?)\s*\|/;
 
     for (let linha of linhas) {
@@ -47,7 +47,7 @@ function processarTexto(texto) {
             const codigo = match[3].trim();
             const descricao = match[4].trim();
 
-            // Ignora linhas de cabeçalho
+      
             if (locacao === 'LOCACAO' || locacao === '--LOCACAO--') continue;
 
             itens.push({ locacao, qtd, codigo, descricao });
@@ -66,19 +66,17 @@ function processarTexto(texto) {
     totalItens = itens.length;
     conferidos = 0;
 
-    // Mostra informação do romaneio
     if (infoRomaneio) {
         const elementoInfo = document.getElementById('info-romaneio');
         elementoInfo.style.display = 'block';
         elementoInfo.textContent = infoRomaneio;
     }
 
-    // Ativa o contador e o botão de limpar
     document.getElementById('secao-contador').style.display = 'block';
     document.getElementById('botao-limpar').style.display = 'inline-block';
     atualizarContador();
 
-    // Monta a tabela
+ 
     corpoTabela.innerHTML = '';
 
     itens.forEach((item, idx) => {
@@ -127,7 +125,7 @@ function filtrarTabela() {
         const textoLinha = linha.innerText.toLowerCase();
         const corresponde = textoLinha.includes(busca);
 
-        // Lógica combinada: Busca + Filtro de Ocultar
+      
         if (corresponde) {
             if (mostrarApenasPendentes && linha.classList.contains('linha-conferida')) {
                 linha.style.display = 'none';
@@ -146,11 +144,11 @@ function alternarVisibilidade() {
     btn.textContent = mostrarApenasPendentes ? "Mostrar Todos" : "Ocultar Conferidos";
     btn.style.background = mostrarApenasPendentes ? "#00009C" : "#fff";
     btn.style.color = mostrarApenasPendentes ? "#fff" : "#00009C";
-    filtrarTabela(); // Atualiza a visão
+    filtrarTabela(); 
 }
 
 function salvarNoHistorico() {
-    // 1. Verificações de segurança (se não tem itens, não faz nada)
+
     if (typeof totalItens === 'undefined' || totalItens === 0) return;
 
     const elementoInfo = document.getElementById('info-romaneio');
@@ -164,38 +162,37 @@ function salvarNoHistorico() {
         concluidos: conferidos
     };
 
-    // 2. Puxa o histórico atual
+   
     let historico = JSON.parse(localStorage.getItem('historico_hontec') || '[]');
 
-    // 3. REGRA PARA NÃO REPETIR O MESMO ARQUIVO EM SEGUIDA
-    // Se o topo da lista já for esse arquivo, a gente remove o antigo para colocar o atualizado no topo
+ 
     if (historico.length > 0 && historico[0].nome === nomeRomaneio) {
-        historico.shift(); // Remove o topo antigo
+        historico.shift(); 
     }
 
-    // 4. Adiciona o registro atual no topo (posição 0)
+    
     historico.unshift(registroNovo);
 
-    // 5. TRAVA DOS 8: Se a lista crescer, corta o 9º item em diante
+   
     if (historico.length > 8) {
         historico = historico.slice(0, 8);
     }
 
-    // 6. Grava de volta no "banco" do navegador
+
     localStorage.setItem('historico_hontec', JSON.stringify(historico));
     console.log("Histórico atualizado com sucesso (Limite 8).");
       atualizarDadosDoHistorico();
 }
 
 function limparTabela() {
-    // 1. Tenta salvar antes de limpar (dentro de um try para não travar o resto)
+  
     try {
         salvarNoHistorico();
     } catch (erro) {
         console.log("Falha ao salvar, mas limpando assim mesmo...");
     }
 
-    // 2. Limpa os inputs e labels
+   
     const input = document.getElementById('entrada-arquivo');
     if (input) input.value = "";
 
@@ -204,11 +201,10 @@ function limparTabela() {
     document.getElementById('secao-contador').style.display = 'none';
     document.getElementById('botao-limpar').style.display = 'none';
 
-    // 3. Reseta as variáveis globais (Ajuste para os nomes que você usa)
+ 
     totalItens = 0;
     conferidos = 0;
 
-    // 4. Reseta a tabela visualmente
     const corpoTabela = document.getElementById('corpo-tabela');
     if (corpoTabela) {
         corpoTabela.innerHTML = `
@@ -220,7 +216,7 @@ function limparTabela() {
         `;
     }
 }
-// 2. Função para MOSTRAR o histórico na tela
+
 function mostrarHistorico() {
     const painel = document.getElementById('secao-historico');
     if (!painel) return;
