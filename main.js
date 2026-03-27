@@ -248,4 +248,5 @@ function atualizarDadosDoHistorico() {
             </div>
         `).join('');
     }
+    
 }
