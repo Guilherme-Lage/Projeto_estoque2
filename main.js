@@ -222,10 +222,9 @@ function mostrarHistorico() {
     if (!painel) return;
 
     if (painel.style.display === 'block') {
-        painel.style.display = 'none'; // Se clicar e já estiver aberto, fecha.
+        painel.style.display = 'none';
     } else {
-        atualizarDadosDoHistorico(); // Desenha a lista antes de mostrar
-        painel.style.display = 'block'; // Abre a caixa
+        atualizarDadosDoHistorico();
     }
 }
 
