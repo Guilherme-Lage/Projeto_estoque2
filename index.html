@@ -1,74 +1,81 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
+
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Conferidor de Estoque</title>
-<link rel="stylesheet" href="style.css">
-<script src="main.js" defer></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Conferidor de Estoque</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="main.js" defer></script>
 
 <body>
 
-<div class="container">
-  <h1>Conferidor de Estoque Hontec</h1>
- 
-  <div class="linha-upload">
+    <div class="container">
+        <h1>Conferidor de Estoque Hontec</h1>
 
-    <button class="botao-padrao" onclick="document.getElementById('entrada-arquivo').click()">Selecionar arquivo</button>
+        <div class="linha-upload">
 
- 
-    <button id="botao-limpar" class="botao-padrao botao-perigo" onclick="limparTabela()" style="display:none;">Limpar Lista</button>
-    
-    <button id="botao-historico" class="botao-padrao" onclick="mostrarHistorico()" > Histórico</button>
-    <span class="legenda-upload" id="legenda-arquivo">Insira o .txt do Apollo</span>
-    
+            <button class="botao-padrao" onclick="document.getElementById('entrada-arquivo').click()">Selecionar
+                arquivo</button>
 
-    <input type="file" id="entrada-arquivo" accept=".txt,.html" onchange="carregarArquivo(this)">
-  </div>
-  
 
-  <div class="info-romaneio" id="info-romaneio"></div>
+            <button id="botao-limpar" class="botao-padrao botao-perigo" onclick="limparTabela()"
+                style="display:none;">Limpar Lista</button>
 
-  <div class="linha-upload" style="flex-wrap: wrap;">
-  <input type="text" id="busca-codigo" placeholder="Digite o código ou peça..." 
-         onkeyup="filtrarTabela()" class="botao-padrao" style="flex: 1; text-align: left;">
-  
-  <button id="btn-ocultar" class="botao-padrao" onclick="alternarVisibilidade()">
-    Ocultar Conferidos
-  </button>
+            <button id="botao-historico" class="botao-padrao" onclick="mostrarHistorico()"> Histórico</button>
+            <span class="legenda-upload" id="legenda-arquivo">Insira o .txt do Apollo</span>
 
-  <div class="secao-contador" id="secao-contador">
-    <span id="contagem-conferidos">0</span> de <span id="contagem-total">0</span> itens conferidos
-  </div>
- 
 
-  <div class="envoltório-tabela">
-    <table>
-      <thead>
-        <tr>
-          <th>Locação</th>
-          <th>Qtd</th>
-          <th>Código</th>
-          <th>Descrição</th>
-          <th>OK</th>
-        </tr>
-      </thead>
-      <tbody id="corpo-tabela">
-        <tr>
-          <td colspan="5" class="estado-vazio">
-            <p>Nenhum arquivo carregado</p>
-          </td>
-        </tr>
-      </tbody>
-    </table>
-  </div>
-</div>
+            <input type="file" id="entrada-arquivo" accept=".txt,.html" onchange="carregarArquivo(this)">
+        </div>
 
-<div id="secao-historico" style="display:none; background:#fff; border:2px solid #2980b9; border-radius:8px; padding:15px; margin-bottom:20px;">
-  <h3 style="font-family:'IBM Plex Mono'; font-size:12px; margin-bottom:10px; color:#2980b9;">📋 ÚLTIMOS ROMANEIOS (HONTEC)</h3>
-  <div id="lista-do-historico"></div>
-  <button class="botao-padrao" onclick="document.getElementById('secao-historico').style.display='none'" style="margin-top:10px; width:100%;">Fechar</button>
-</div>
- 
+
+        <div class="info-romaneio" id="info-romaneio"></div>
+
+        <div class="linha-upload" style="flex-wrap: wrap;">
+            <input type="text" id="busca-codigo" placeholder="Digite o código ou peça..." onkeyup="filtrarTabela()"
+                class="botao-padrao" style="flex: 1; text-align: left;">
+
+            <button id="btn-ocultar" class="botao-padrao" onclick="alternarVisibilidade()">
+                Ocultar Conferidos
+            </button>
+
+            <div class="secao-contador" id="secao-contador">
+                <span id="contagem-conferidos">0</span> de <span id="contagem-total">0</span> itens conferidos
+            </div>
+
+
+            <div class="envoltório-tabela">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Locação</th>
+                            <th>Qtd</th>
+                            <th>Código</th>
+                            <th>Descrição</th>
+                            <th>OK</th>
+                        </tr>
+                    </thead>
+                    <tbody id="corpo-tabela">
+                        <tr>
+                            <td colspan="5" class="estado-vazio">
+                                <p>Nenhum arquivo carregado</p>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div id="secao-historico"
+            style="display:none; background:#fff; border:2px solid #2980b9; border-radius:8px; padding:15px; margin-bottom:20px;">
+            <h3 style="font-family:'IBM Plex Mono'; font-size:12px; margin-bottom:10px; color:#2980b9;">📋 ÚLTIMOS
+                ROMANEIOS (HONTEC)</h3>
+            <div id="lista-do-historico"></div>
+            <button class="botao-padrao" onclick="document.getElementById('secao-historico').style.display='none'"
+                style="margin-top:10px; width:100%;">Fechar</button>
+        </div>
+
 </body>
+
 </html>

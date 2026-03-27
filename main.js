@@ -36,7 +36,7 @@ function processarTexto(texto) {
         }
     }
 
-   
+
     const regex = /\|\s+([\d.A-Za-z]+)\s+([\d,]+)\s+(\d+)\s+(.*?)\s*\|/;
 
     for (let linha of linhas) {
@@ -47,7 +47,7 @@ function processarTexto(texto) {
             const codigo = match[3].trim();
             const descricao = match[4].trim();
 
-      
+
             if (locacao === 'LOCACAO' || locacao === '--LOCACAO--') continue;
 
             itens.push({ locacao, qtd, codigo, descricao });
@@ -76,7 +76,7 @@ function processarTexto(texto) {
     document.getElementById('botao-limpar').style.display = 'inline-block';
     atualizarContador();
 
- 
+
     corpoTabela.innerHTML = '';
 
     itens.forEach((item, idx) => {
@@ -125,7 +125,7 @@ function filtrarTabela() {
         const textoLinha = linha.innerText.toLowerCase();
         const corresponde = textoLinha.includes(busca);
 
-      
+
         if (corresponde) {
             if (mostrarApenasPendentes && linha.classList.contains('linha-conferida')) {
                 linha.style.display = 'none';
@@ -144,7 +144,7 @@ function alternarVisibilidade() {
     btn.textContent = mostrarApenasPendentes ? "Mostrar Todos" : "Ocultar Conferidos";
     btn.style.background = mostrarApenasPendentes ? "#00009C" : "#fff";
     btn.style.color = mostrarApenasPendentes ? "#fff" : "#00009C";
-    filtrarTabela(); 
+    filtrarTabela();
 }
 
 function salvarNoHistorico() {
@@ -154,7 +154,7 @@ function salvarNoHistorico() {
     const elementoInfo = document.getElementById('info-romaneio');
     const nomeRomaneio = (elementoInfo && elementoInfo.textContent) ? elementoInfo.textContent : "Documento Avulso";
     const dataHora = new Date().toLocaleString('pt-BR');
-    
+
     const registroNovo = {
         nome: nomeRomaneio,
         data: dataHora,
@@ -162,18 +162,18 @@ function salvarNoHistorico() {
         concluidos: conferidos
     };
 
-   
+
     let historico = JSON.parse(localStorage.getItem('historico_hontec') || '[]');
 
- 
+
     if (historico.length > 0 && historico[0].nome === nomeRomaneio) {
-        historico.shift(); 
+        historico.shift();
     }
 
-    
+
     historico.unshift(registroNovo);
 
-   
+
     if (historico.length > 8) {
         historico = historico.slice(0, 8);
     }
@@ -181,18 +181,18 @@ function salvarNoHistorico() {
 
     localStorage.setItem('historico_hontec', JSON.stringify(historico));
     console.log("Histórico atualizado com sucesso (Limite 8).");
-      atualizarDadosDoHistorico();
+    atualizarDadosDoHistorico();
 }
 
 function limparTabela() {
-  
+
     try {
         salvarNoHistorico();
     } catch (erro) {
         console.log("Falha ao salvar, mas limpando assim mesmo...");
     }
 
-   
+
     const input = document.getElementById('entrada-arquivo');
     if (input) input.value = "";
 
@@ -201,7 +201,7 @@ function limparTabela() {
     document.getElementById('secao-contador').style.display = 'none';
     document.getElementById('botao-limpar').style.display = 'none';
 
- 
+
     totalItens = 0;
     conferidos = 0;
 
@@ -234,7 +234,7 @@ function atualizarDadosDoHistorico() {
     if (!lista) return;
 
     const dados = JSON.parse(localStorage.getItem('historico_hontec') || '[]');
-    
+
     if (dados.length === 0) {
         lista.innerHTML = "<p style='font-size:12px; color:#999; text-align:center;'>Nenhum romaneio salvo.</p>";
     } else {
