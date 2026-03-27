@@ -225,6 +225,7 @@ function mostrarHistorico() {
         painel.style.display = 'none';
     } else {
         atualizarDadosDoHistorico();
+        painel.style.display = 'block';
     }
 }
 
