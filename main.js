@@ -24,7 +24,38 @@ function carregarArquivo(input) {
 }
 
 function processarTexto(texto) {
-    const linhas = texto.split('\n');
+        const linhas = texto.split('\n');
+    
+    // Captura robusta usando Regex
+    const nRomaneio = texto.match(/Nº:\s+(\d+)/)?.[1] || "---";
+    const dataHora = texto.match(/(\d{2}\/\d{2}\/\d{4}\s\d{2}:\d{2})/)?.[1] || "---";
+    const requisitante = texto.match(/REQ\.:\s+(.*?)\s+CONTATO/)?.[1]?.trim() || "---";
+    const contato = texto.match(/CONTATO:\s+(\d+)/)?.[1] || "---";
+    const os = texto.match(/OS:\s*(\d*)/)?.[1] || "---";
+    const cliente = texto.match(/CLIENTE:\s+(\d+\s+.*?)\s+PLACA/)?.[1]?.trim() || "---";
+    const placa = texto.match(/PLACA:\s*(.*?)\s*\|/)?.[1]?.trim() || "---";
+    const modelo = texto.match(/MODELO:\s*(.*?)\s*\|/)?.[1]?.trim() || "---";
+
+    const painel = document.getElementById('painel-cabecalho');
+  painel.style.display = 'block'; 
+  
+    // Montando o HTML com todos os dados
+    painel.innerHTML = `
+        <div class="cabecalho-topo">
+            <span>Romaneio Nº: ${nRomaneio}</span>
+            <span>Data: ${dataHora}</span>
+        </div>
+        <div class="cabecalho-corpo">
+            <div class="cabecalho-item"><span>REQ:</span> <strong>${requisitante}</strong></div>
+            <div class="cabecalho-item"><span>CONTATO:</span> <strong>${contato}</strong></div>
+            <div class="cabecalho-item"><span>OS:</span> <strong>${os}</strong></div>
+            <div class="cabecalho-item"><span>PLACA:</span> <strong>${placa}</strong></div>
+            <div class="cabecalho-item item-full"><span>CLIENTE:</span> <strong>${cliente}</strong></div>
+            <div class="cabecalho-item item-full"><span>MODELO:</span> <strong>${modelo}</strong></div>
+        </div>
+    `;
+
+  
     const itens = [];
 
     let infoRomaneio = '';

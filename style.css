@@ -396,3 +396,53 @@ th:nth-child(5) {
     background: #1e5c35 !important;
     border-color: #1e5c35 !important;
 }
+
+.painel-cabecalho {
+    background: #fff;
+    border: 2px solid #1a1a1a;
+    border-radius: 6px;
+    overflow: hidden;
+    margin-bottom: 20px;
+    font-family: 'IBM Plex Mono', monospace;
+    width: 100%; /* Força a largura total da div pai */
+    display: none; /* Mantém o JS controlando a exibição */
+}
+
+.cabecalho-corpo {
+    padding: 16px;
+    display: flex; /* Mudamos de grid para flex para melhor controle */
+    flex-wrap: wrap; /* Permite que os itens pulem de linha se não couberem */
+    gap: 12px 24px; /* Espaçamento entre linhas e colunas */
+    font-size: 13px;
+}
+
+.cabecalho-topo {
+    background: #CC0000; /* Azul igual ao seu H1 */
+    color: #fff;
+    padding: 8px 12px;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    display: flex;
+    justify-content: space-between;
+}
+
+.cabecalho-item {
+    border-bottom: 1px solid #eee;
+    padding-bottom: 4px;
+    min-width: 150px; /* Garante que os itens pequenos não sumam */
+    flex: 1 1 auto; /* Deixa os itens crescerem para ocupar o espaço */
+}
+
+/* Força Cliente e Modelo a ocuparem a linha inteira sempre */
+.item-full {
+    flex: 1 1 100% !important; 
+    border-bottom: 1px solid #eee;
+}
+
+.cabecalho-item span {
+    color: #888;
+    font-size: 11px;
+    margin-right: 8px;
+}
