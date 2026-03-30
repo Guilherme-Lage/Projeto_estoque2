@@ -82,9 +82,13 @@ function processarTexto(texto) {
     itens.forEach((item, idx) => {
         const tr = document.createElement('tr');
         tr.id = `linha-${idx}`;
+
+        const valorQtd = parseFloat(item.qtd);
+        const classeDestaque = valorQtd > 1 ? 'qtd-multipla' : '';
+
         tr.innerHTML = `
       <td class="col-locacao">${item.locacao}</td>
-      <td class="col-qtd">${parseFloat(item.qtd).toFixed(0)}</td>
+      <td class="col-qtd"><span class="${classeDestaque}">${valorQtd.toFixed(0)}</span></td>
       <td class="col-codigo">${item.codigo}</td>
       <td class="col-descricao">${item.descricao}</td>
       <td class="col-check">
@@ -248,5 +252,31 @@ function atualizarDadosDoHistorico() {
             </div>
         `).join('');
     }
-    
+
+}
+async function colarDoApollo() {
+    if (typeof totalItens !== 'undefined' && totalItens > 0) {
+        salvarNoHistorico();
+    }
+    try {
+
+        const texto = await navigator.clipboard.readText();
+
+        if (texto.trim() === "") {
+            alert("A área de transferência está vazia. Copie o romaneio no Apollo primeiro!");
+            return;
+        }
+
+        // Chama sua função que já existe para processar o texto
+        processarTexto(texto);
+
+        // Feedback visual para o usuário
+        document.getElementById('legenda-arquivo').textContent = "Processado via Copiar/Colar";
+        console.log("Romaneio processado sem salvar arquivo.");
+
+    } catch (err) {
+
+        alert("Não foi possível colar automaticamente. Use Ctrl+V no campo de busca.");
+        console.error("Erro ao colar:", err);
+    }
 }

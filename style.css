@@ -376,3 +376,23 @@ th:nth-child(5) {
     width: 18%;
 }
 
+.qtd-multipla {
+    background-color: #fff3cd; 
+    color: #856404;
+    font-weight: 800 !important;
+    border: 1px solid #ffeeba;
+    border-radius: 3px;
+    padding: 2px 6px;
+    display: inline-block;
+    animation: pulse 2s infinite;
+}
+.botao-colar {
+    background: #2d7a4a !important; /* Verde para indicar ação positiva/rápida */
+    color: #fff !important;
+    border-color: #2d7a4a !important;
+}
+
+.botao-colar:hover {
+    background: #1e5c35 !important;
+    border-color: #1e5c35 !important;
+}

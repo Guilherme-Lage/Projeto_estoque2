@@ -15,12 +15,15 @@
 
         <div class="linha-upload">
 
-            <button class="botao-padrao" onclick="document.getElementById('entrada-arquivo').click()">Selecionar
-                arquivo</button>
+            <button class="botao-padrao" onclick="document.getElementById('entrada-arquivo').click()">Abrir
+                Romaneio</button>
+            <button class="botao-padrao" onclick="colarDoApollo()">Copiar Romaneio</button>
 
+         
+            <textarea id="campo-colar" style="position: absolute; opacity: 0; pointer-events: none;"></textarea>
 
             <button id="botao-limpar" class="botao-padrao botao-perigo" onclick="limparTabela()"
-                style="display:none;">Limpar Lista</button>
+                style="display:none;">Novo Romaneio</button>
 
             <button id="botao-historico" class="botao-padrao" onclick="mostrarHistorico()"> Histórico</button>
             <span class="legenda-upload" id="legenda-arquivo">Insira o .txt do Apollo</span>
