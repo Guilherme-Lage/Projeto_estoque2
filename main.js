@@ -45,7 +45,7 @@ function processarTexto(texto) {
             <span>Romaneio Nº: ${nRomaneio}</span>
             <span>Data: ${dataHora}</span>
         </div>
-        <div class="cabecalho-corpo">
+        <div class="cabecalho-corpo" id="cabecalho-corpo">
             <div class="cabecalho-item"><span>REQ:</span> <strong>${requisitante}</strong></div>
             <div class="cabecalho-item"><span>CONTATO:</span> <strong>${contato}</strong></div>
             <div class="cabecalho-item"><span>OS:</span> <strong>${os}</strong></div>
@@ -249,6 +249,16 @@ function limparTabela() {
                 </td>
             </tr>
         `;
+    }
+    const painelcabecalho = document.getElementById('painel-cabecalho');
+    if (painelcabecalho) {
+        painelcabecalho.innerHTML = `
+             <div class="cabecalho-topo">
+             </div>
+             <div class="cabecalho-corpo" id="cabecalho-corpo">
+            
+        </div>
+    `;
     }
 }
 

@@ -85,9 +85,11 @@ h1 {
     font-size: 12px;
     margin-bottom: 14px;
     padding: 10px 14px;
-    border: 1.5px solid #1a1a1a; /* Borda padrão para combinar com a tabela */
+    border: 1.5px solid #1a1a1a;
+    /* Borda padrão para combinar com a tabela */
     border-radius: 4px;
-    transition: background 0.3s ease, color 0.3s ease; /* Transição suave de cor */
+    transition: background 0.3s ease, color 0.3s ease;
+    /* Transição suave de cor */
     font-weight: 600;
 }
 
@@ -378,7 +380,7 @@ th:nth-child(5) {
 }
 
 .qtd-multipla {
-    background-color: #fff3cd; 
+    background-color: #fff3cd;
     color: #856404;
     font-weight: 800 !important;
     border: 1px solid #ffeeba;
@@ -387,8 +389,10 @@ th:nth-child(5) {
     display: inline-block;
     animation: pulse 2s infinite;
 }
+
 .botao-colar {
-    background: #2d7a4a !important; /* Verde para indicar ação positiva/rápida */
+    background: #2d7a4a !important;
+    /* Verde para indicar ação positiva/rápida */
     color: #fff !important;
     border-color: #2d7a4a !important;
 }
@@ -405,20 +409,26 @@ th:nth-child(5) {
     overflow: hidden;
     margin-bottom: 20px;
     font-family: 'IBM Plex Mono', monospace;
-    width: 100%; /* Força a largura total da div pai */
-    display: none; /* Mantém o JS controlando a exibição */
+    width: 100%;
+    /* Força a largura total da div pai */
+    display: none;
+
 }
 
 .cabecalho-corpo {
     padding: 16px;
-    display: flex; /* Mudamos de grid para flex para melhor controle */
-    flex-wrap: wrap; /* Permite que os itens pulem de linha se não couberem */
-    gap: 12px 24px; /* Espaçamento entre linhas e colunas */
+    display: flex;
+    /* Mudamos de grid para flex para melhor controle */
+    flex-wrap: wrap;
+    /* Permite que os itens pulem de linha se não couberem */
+    gap: 12px 24px;
+    /* Espaçamento entre linhas e colunas */
     font-size: 13px;
 }
 
 .cabecalho-topo {
-    background: #CC0000; /* Azul igual ao seu H1 */
+    background: #CC0000;
+    /* Azul igual ao seu H1 */
     color: #fff;
     padding: 8px 12px;
     font-size: 11px;
@@ -432,13 +442,15 @@ th:nth-child(5) {
 .cabecalho-item {
     border-bottom: 1px solid #eee;
     padding-bottom: 4px;
-    min-width: 150px; /* Garante que os itens pequenos não sumam */
-    flex: 1 1 auto; /* Deixa os itens crescerem para ocupar o espaço */
+    min-width: 150px;
+    /* Garante que os itens pequenos não sumam */
+    flex: 1 1 auto;
+    /* Deixa os itens crescerem para ocupar o espaço */
 }
 
 /* Força Cliente e Modelo a ocuparem a linha inteira sempre */
 .item-full {
-    flex: 1 1 100% !important; 
+    flex: 1 1 100% !important;
     border-bottom: 1px solid #eee;
 }
 
