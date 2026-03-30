@@ -273,18 +273,30 @@ function atualizarDadosDoHistorico() {
     if (dados.length === 0) {
         lista.innerHTML = "<p style='font-size:12px; color:#999; text-align:center;'>Nenhum romaneio salvo.</p>";
     } else {
-        lista.innerHTML = dados.map(item => `
-            <div style="padding:10px; border-bottom:1px solid #eee; font-size:12px;">
-                <strong>${item.nome}</strong><br>
-                <span style="color:#888; font-size:10px;">${item.data}</span><br>
-                <span style="color:${item.concluidos === item.total ? 'green' : 'orange'}">
-                    Status: ${item.concluidos}/${item.total} OK
-                </span>
-            </div>
-        `).join('');
-    }
+        lista.innerHTML = dados.map(item => {
+         
+            let corStatus;
+            if (item.concluidos === 0) {
+                corStatus = '#CC0000'; // Vermelho (Nada feito)
+            } else if (item.concluidos === item.total) {
+                corStatus = '#2d7a4a'; // Verde (Finalizado)
+            } else {
+                corStatus = '#f39c12'; // Laranja (Em andamento)
+            }
 
+            return `
+                <div style="padding:10px; border-bottom:1px solid #eee; font-size:12px;">
+                    <strong>${item.nome}</strong><br>
+                    <span style="color:#888; font-size:10px;">${item.data}</span><br>
+                    <span style="color:${corStatus}; font-weight: 600;">
+                        Status: ${item.concluidos}/${item.total} OK
+                    </span>
+                </div>
+            `;
+        }).join('');
+    }
 }
+
 async function colarDoApollo() {
     if (typeof totalItens !== 'undefined' && totalItens > 0) {
         salvarNoHistorico();
@@ -309,5 +321,26 @@ async function colarDoApollo() {
 
         alert("Não foi possível colar automaticamente. Use Ctrl+V no campo de busca.");
         console.error("Erro ao colar:", err);
+    }
+}
+
+function atualizarContador() {
+    const elementoContador = document.getElementById('secao-contador');
+    document.getElementById('contagem-conferidos').textContent = conferidos;
+    document.getElementById('contagem-total').textContent = totalItens;
+
+    // Lógica de 3 cores para o fundo da barra
+    if (conferidos === 0) {
+        elementoContador.style.background = "#fff0f0"; // Fundo Vermelho claro
+        elementoContador.style.color = "#CC0000";      // Texto Vermelho
+        elementoContador.style.borderColor = "#CC0000";
+    } else if (conferidos === totalItens && totalItens > 0) {
+        elementoContador.style.background = "#edf7f0"; // Fundo Verde claro
+        elementoContador.style.color = "#2d7a4a";      // Texto Verde
+        elementoContador.style.borderColor = "#2d7a4a";
+    } else {
+        elementoContador.style.background = "#fff9eb"; // Fundo Laranja claro
+        elementoContador.style.color = "#f39c12";      // Texto Laranja
+        elementoContador.style.borderColor = "#f39c12";
     }
 }
