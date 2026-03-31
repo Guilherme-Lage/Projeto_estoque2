@@ -24,8 +24,8 @@ function carregarArquivo(input) {
 }
 
 function processarTexto(texto) {
-        const linhas = texto.split('\n');
-    
+    const linhas = texto.split('\n');
+
     // Captura robusta usando Regex
     const nRomaneio = texto.match(/Nº:\s+(\d+)/)?.[1] || "---";
     const dataHora = texto.match(/(\d{2}\/\d{2}\/\d{4}\s\d{2}:\d{2})/)?.[1] || "---";
@@ -37,8 +37,8 @@ function processarTexto(texto) {
     const modelo = texto.match(/MODELO:\s*(.*?)\s*\|/)?.[1]?.trim() || "---";
 
     const painel = document.getElementById('painel-cabecalho');
-  painel.style.display = 'block'; 
-  
+    painel.style.display = 'block';
+
     // Montando o HTML com todos os dados
     painel.innerHTML = `
         <div class="cabecalho-topo">
@@ -55,7 +55,7 @@ function processarTexto(texto) {
         </div>
     `;
 
-  
+
     const itens = [];
 
     let infoRomaneio = '';
@@ -183,83 +183,75 @@ function alternarVisibilidade() {
 }
 
 function salvarNoHistorico() {
-
     if (typeof totalItens === 'undefined' || totalItens === 0) return;
 
     const elementoInfo = document.getElementById('info-romaneio');
     const nomeRomaneio = (elementoInfo && elementoInfo.textContent) ? elementoInfo.textContent : "Documento Avulso";
     const dataHora = new Date().toLocaleString('pt-BR');
 
+    // 1. CAPTURA OS ITENS DA TABELA
+    const itensAtuais = [];
+    const linhas = document.querySelectorAll('#corpo-tabela tr');
+
+    linhas.forEach((linha) => {
+        if (linha.querySelector('.estado-vazio')) return;
+
+        const locacao = linha.querySelector('.col-locacao')?.textContent || '';
+        const qtd = linha.querySelector('.col-qtd')?.textContent || '0';
+        const codigo = linha.querySelector('.col-codigo')?.textContent || '';
+        const descricao = linha.querySelector('.col-descricao')?.textContent || '';
+        const conferido = linha.classList.contains('linha-conferida');
+
+        itensAtuais.push({ locacao, qtd, codigo, descricao, conferido });
+    });
+
+    // 2. NOVA LÓGICA: Captura os dados do cabeçalho
+    const cabecalhoCorpo = document.getElementById('cabecalho-corpo');
+    let dadosCabecalho = null;
+
+    if (cabecalhoCorpo) {
+        const strongs = cabecalhoCorpo.querySelectorAll('strong');
+        // Extrai a numeração do topo se houver
+        const topoTexto = document.querySelector('.cabecalho-topo')?.innerText || '';
+        const nRomaneio = topoTexto.match(/Nº:\s*(.*)/)?.[1] || "---";
+        const dataHoraDoc = topoTexto.match(/Data:\s*(.*)/)?.[1] || "---";
+
+        dadosCabecalho = {
+            nRomaneio: nRomaneio,
+            dataHora: dataHoraDoc,
+            requisitante: strongs[0]?.innerText || "---",
+            contato: strongs[1]?.innerText || "---",
+            os: strongs[2]?.innerText || "---",
+            placa: strongs[3]?.innerText || "---",
+            cliente: strongs[4]?.innerText || "---",
+            modelo: strongs[5]?.innerText || "---"
+        };
+    }
+
     const registroNovo = {
         nome: nomeRomaneio,
         data: dataHora,
         total: totalItens,
-        concluidos: conferidos
+        concluidos: conferidos,
+        produtos: itensAtuais,
+        cabecalho: dadosCabecalho // Guardando os dados do cliente, placa, etc.
     };
 
-
     let historico = JSON.parse(localStorage.getItem('historico_hontec') || '[]');
-
 
     if (historico.length > 0 && historico[0].nome === nomeRomaneio) {
         historico.shift();
     }
 
-
     historico.unshift(registroNovo);
-
 
     if (historico.length > 8) {
         historico = historico.slice(0, 8);
     }
 
-
     localStorage.setItem('historico_hontec', JSON.stringify(historico));
     console.log("Histórico atualizado com sucesso (Limite 8).");
     atualizarDadosDoHistorico();
-}
-
-function limparTabela() {
-
-    try {
-        salvarNoHistorico();
-    } catch (erro) {
-        console.log("Falha ao salvar, mas limpando assim mesmo...");
-    }
-
-
-    const input = document.getElementById('entrada-arquivo');
-    if (input) input.value = "";
-
-    document.getElementById('legenda-arquivo').textContent = "Insira o .txt do Apollo";
-    document.getElementById('info-romaneio').style.display = 'none';
-    document.getElementById('secao-contador').style.display = 'none';
-    document.getElementById('botao-limpar').style.display = 'none';
-
-
-    totalItens = 0;
-    conferidos = 0;
-
-    const corpoTabela = document.getElementById('corpo-tabela');
-    if (corpoTabela) {
-        corpoTabela.innerHTML = `
-            <tr>
-                <td colspan="5" class="estado-vazio">
-                    <p>Nenhum arquivo carregado</p>
-                </td>
-            </tr>
-        `;
-    }
-    const painelcabecalho = document.getElementById('painel-cabecalho');
-    if (painelcabecalho) {
-        painelcabecalho.innerHTML = `
-             <div class="cabecalho-topo">
-             </div>
-             <div class="cabecalho-corpo" id="cabecalho-corpo">
-            
-        </div>
-    `;
-    }
 }
 
 function mostrarHistorico() {
@@ -283,19 +275,19 @@ function atualizarDadosDoHistorico() {
     if (dados.length === 0) {
         lista.innerHTML = "<p style='font-size:12px; color:#999; text-align:center;'>Nenhum romaneio salvo.</p>";
     } else {
-        lista.innerHTML = dados.map(item => {
-         
+        lista.innerHTML = dados.map((item, index) => {
             let corStatus;
             if (item.concluidos === 0) {
-                corStatus = '#CC0000'; // Vermelho (Nada feito)
+                corStatus = '#CC0000';
             } else if (item.concluidos === item.total) {
-                corStatus = '#2d7a4a'; // Verde (Finalizado)
+                corStatus = '#2d7a4a';
             } else {
-                corStatus = '#f39c12'; // Laranja (Em andamento)
+                corStatus = '#f39c12';
             }
 
+            // Adicionado cursor:pointer e o evento onclick apontando para a função acima
             return `
-                <div style="padding:10px; border-bottom:1px solid #eee; font-size:12px;">
+                <div onclick="carregarDoHistorico(${index})" style="padding:10px; border-bottom:1px solid #eee; font-size:12px; cursor:pointer; transition: background 0.2s;" onmouseover="this.style.background='#f5f5f5'" onmouseout="this.style.background='white'">
                     <strong>${item.nome}</strong><br>
                     <span style="color:#888; font-size:10px;">${item.data}</span><br>
                     <span style="color:${corStatus}; font-weight: 600;">
@@ -306,7 +298,6 @@ function atualizarDadosDoHistorico() {
         }).join('');
     }
 }
-
 async function colarDoApollo() {
     if (typeof totalItens !== 'undefined' && totalItens > 0) {
         salvarNoHistorico();
@@ -352,5 +343,110 @@ function atualizarContador() {
         elementoContador.style.background = "#fff9eb"; // Fundo Laranja claro
         elementoContador.style.color = "#f39c12";      // Texto Laranja
         elementoContador.style.borderColor = "#f39c12";
+    }
+}
+
+function carregarDoHistorico(indice) {
+    const dados = JSON.parse(localStorage.getItem('historico_hontec') || '[]');
+    const romaneioSelecionado = dados[indice];
+
+    if (!romaneioSelecionado || !romaneioSelecionado.produtos) {
+        alert("Não há dados de produtos salvos para este romaneio.");
+        return;
+    }
+
+    // 1. Restaurar os contadores globais
+    totalItens = romaneioSelecionado.total;
+    conferidos = romaneioSelecionado.concluidos;
+
+    // 2. Restaurar o título do Romaneio
+    const elementoInfo = document.getElementById('info-romaneio');
+    elementoInfo.style.display = 'block';
+    elementoInfo.textContent = romaneioSelecionado.nome;
+
+    // 3. Exibir os botões de controle e o contador
+    document.getElementById('secao-contador').style.display = 'block';
+    document.getElementById('botao-limpar').style.display = 'inline-block';
+    atualizarContador();
+
+    // 4. NOVA LÓGICA: Restaurar a tabela de cabeçalho
+    const painel = document.getElementById('painel-cabecalho');
+    if (romaneioSelecionado.cabecalho && painel) {
+        painel.style.display = 'block';
+        const cab = romaneioSelecionado.cabecalho;
+
+        painel.innerHTML = `
+            <div class="cabecalho-topo">
+                <span>Romaneio Nº: ${cab.nRomaneio}</span>
+                <span>Data: ${cab.dataHora}</span>
+            </div>
+            <div class="cabecalho-corpo" id="cabecalho-corpo">
+                <div class="cabecalho-item"><span>REQ:</span> <strong>${cab.requisitante}</strong></div>
+                <div class="cabecalho-item"><span>CONTATO:</span> <strong>${cab.contato}</strong></div>
+                <div class="cabecalho-item"><span>OS:</span> <strong>${cab.os}</strong></div>
+                <div class="cabecalho-item"><span>PLACA:</span> <strong>${cab.placa}</strong></div>
+                <div class="cabecalho-item item-full"><span>CLIENTE:</span> <strong>${cab.cliente}</strong></div>
+                <div class="cabecalho-item item-full"><span>MODELO:</span> <strong>${cab.modelo}</strong></div>
+            </div>
+        `;
+    } else if (painel) {
+        painel.style.display = 'none'; // Esconde caso o registro antigo não tenha cabeçalho
+    }
+
+    // 5. Montar as linhas na tabela novamente
+    const corpoTabela = document.getElementById('corpo-tabela');
+    corpoTabela.innerHTML = '';
+
+    romaneioSelecionado.produtos.forEach((item, idx) => {
+        const tr = document.createElement('tr');
+        tr.id = `linha-${idx}`;
+
+        const valorQtd = parseFloat(item.qtd);
+        const classeDestaque = valorQtd > 1 ? 'qtd-multipla' : '';
+
+        if (item.conferido) {
+            tr.classList.add('linha-conferida');
+        }
+
+        tr.innerHTML = `
+          <td class="col-locacao">${item.locacao}</td>
+          <td class="col-qtd"><span class="${classeDestaque}">${valorQtd.toFixed(0)}</span></td>
+          <td class="col-codigo">${item.codigo}</td>
+          <td class="col-descricao">${item.descricao}</td>
+          <td class="col-check">
+            <div class="caixa-selecao">
+              <input type="checkbox" id="chk-${idx}" ${item.conferido ? 'checked' : ''} onchange="marcarItem(${idx}, this.checked)">
+            </div>
+          </td>
+        `;
+        corpoTabela.appendChild(tr);
+    });
+
+    // Fecha a janela do histórico após carregar
+    document.getElementById('secao-historico').style.display = 'none';
+}
+
+function limparTabela() {
+    try { salvarNoHistorico(); }
+    catch (erro) {
+        console.log("Falha ao salvar, mas limpando assim mesmo...");
+    } const input = document.getElementById('entrada-arquivo');
+    if (input) input.value = "";
+    document.getElementById('legenda-arquivo').textContent = "Insira o .txt do Apollo";
+    document.getElementById('info-romaneio').style.display = 'none';
+    document.getElementById('secao-contador').style.display = 'none';
+    document.getElementById('botao-limpar').style.display = 'none';
+    totalItens = 0; conferidos = 0;
+    const corpoTabela = document.getElementById('corpo-tabela');
+    if (corpoTabela) {
+        corpoTabela.innerHTML = ` <tr> <td colspan="5" class="estado-vazio"> 
+             <p>Nenhum arquivo carregado</p> </td> </tr> `;
+    }
+    const painelcabecalho = document.getElementById('painel-cabecalho');
+    if (painelcabecalho) {
+        painelcabecalho.innerHTML = `
+         <div class="cabecalho-topo"> </div> 
+         <div class="cabecalho-corpo" id="cabecalho-corpo"></div> 
+         `;
     }
 }
