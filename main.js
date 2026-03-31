@@ -156,7 +156,7 @@ function filtrarTabela() {
     const busca = document.getElementById('busca-codigo').value.toLowerCase().trim();
     const linhas = document.querySelectorAll('#corpo-tabela tr');
 
-    // Se o campo de busca estiver vazio, não faz marcação automática
+    // Se o campo de busca estiver vazio, apenas reseta a tabela sem marcar nada
     if (busca === "") {
         linhas.forEach(linha => {
             if (mostrarApenasPendentes && linha.classList.contains('linha-conferida')) {
@@ -171,7 +171,7 @@ function filtrarTabela() {
     let linhasVisiveis = [];
 
     linhas.forEach(linha => {
-        
+        // Ignora a linha que avisa que a tabela está vazia
         if (linha.querySelector('.estado-vazio')) return;
 
         const textoLinha = linha.innerText.toLowerCase();
@@ -182,30 +182,39 @@ function filtrarTabela() {
                 linha.style.display = 'none';
             } else {
                 linha.style.display = '';
-                linhasVisiveis.push(linha); 
+                linhasVisiveis.push(linha); // Guarda as linhas que passaram no filtro
             }
         } else {
             linha.style.display = 'none';
         }
     });
 
-  //Quando pesquisa marca automaticamente 
+    // --- LÓGICA AUTOMÁTICA CORRIGIDA ---
+    // Se a busca resultou em EXATAMENTE 1 item na tela
     if (linhasVisiveis.length === 1) {
-        const linhaUnica = linhasVisiveis[0];
+        // CORREÇÃO AQUI: Adicionado o [0] para pegar o primeiro item da lista de visíveis
+        const linhaUnica = linhasVisiveis[0]; 
         const checkbox = linhaUnica.querySelector('input[type="checkbox"]');
         
-        
+        // Se a caixinha existir e ainda não estiver marcada
         if (checkbox && !checkbox.checked) {
             checkbox.checked = true;
             
-            const idx = checkbox.id.replace('chk-', '');
-           
-            marcarItem(parseInt(idx), true);
+            // Extrai o número do ID (ex: "chk-5" vira 5)
+            const matchId = checkbox.id.match(/\d+/);
             
-            console.log(`Item automático conferido: Linha ${idx}`);
+            if (matchId) {
+                const idx = parseInt(matchId[0], 10);
+                
+                // Dispara a função para colorir a linha e somar no contador
+                marcarItem(idx, true);
+                
+                console.log(`Sucesso! Item da linha ${idx} marcado automaticamente.`);
+            }
         }
     }
 }
+
 
 function alternarVisibilidade() {
     mostrarApenasPendentes = !mostrarApenasPendentes;
@@ -484,5 +493,117 @@ function limparTabela() {
          <div class="cabecalho-topo"> </div> 
          <div class="cabecalho-corpo" id="cabecalho-corpo"></div> 
          `;
+    }
+}
+
+function salvarTabelaEmArquivo() {
+    const linhas = document.querySelectorAll('#corpo-tabela tr');
+    
+    if (linhas.length === 0 || document.querySelector('.estado-vazio')) {
+        alert("Atenção: Carregue um romaneio na tabela primeiro para poder salvar!");
+        return;
+    }
+
+    // 1. CAPTURA O NÚMERO DO ROMANEIO DIRETAMENTE DO CABEÇALHO AZUL
+    const spanNum = document.getElementById('cab-num-romaneio');
+    const spanData = document.getElementById('cab-data-romaneio');
+    
+    // Captura segura dos dados
+    const requisitante = document.querySelector('#cabecalho-corpo .cabecalho-item:nth-child(1) strong')?.innerText || '---';
+    const contato = document.querySelector('#cabecalho-corpo .cabecalho-item:nth-child(2) strong')?.innerText || '---';
+    const os = document.querySelector('#cabecalho-corpo .cabecalho-item:nth-child(3) strong')?.innerText || '---';
+    const placa = document.querySelector('#cabecalho-corpo .cabecalho-item:nth-child(4) strong')?.innerText || '---';
+    const cliente = document.querySelector('#cabecalho-corpo .item-full:nth-of-type(5) strong')?.innerText || '---';
+    const modelo = document.querySelector('#cabecalho-corpo .item-full:nth-of-type(6) strong')?.innerText || '---';
+
+    // LIMPEZA CORRIGIDA: Pegamos o texto e extraímos apenas os números
+    let nRomaneio = spanNum ? spanNum.innerText : "";
+    let matchNumero = nRomaneio.match(/\d+/); // Busca a primeira sequência de números (ex: 15583)
+    let numeroLimpo = matchNumero ? matchNumero[0] : "";
+
+    let dataDoc = spanData ? spanData.innerText.replace('Data:', '').trim() : "---";
+
+    // Se mesmo assim não achar número, usamos o número da OS como quebra-galho para não salvar sem nome
+    if (numeroLimpo === "" && os !== '---') {
+        numeroLimpo = os.trim();
+    }
+
+    // --- MONTAGEM DO ARQUIVO COM ESPAÇAMENTOS PRECISOS ---
+    let textoTXT = `                                                                | REEMISSÃO |\n`;
+    
+    // Alinhamento exato do topo do romaneio
+    const topoInfo = `Nº:   ${numeroLimpo} - ${dataDoc} -+`;
+    textoTXT += `+-----------------     ROMANEIO DE RETIRADA    ${topoInfo.padStart(55)}\n`;
+    
+    // Linha do Requisitante, Contato e OS
+    const reqStr = `| REQ.: ${requisitante}`.padEnd(42, ' ');
+    const contStr = `CONTATO:   ${contato}`.padEnd(20, ' ');
+    const osStr = `OS:      ${os}`.padEnd(15, ' ');
+    textoTXT += `${reqStr}${contStr}${osStr}|\n`;
+    textoTXT += `+------------------------------------------------------------------------------+\n`;
+    
+    // Linha do Cliente e Placa
+    const cliStr = `| CLIENTE:     ${cliente}`.padEnd(55, ' ');
+    const placaStr = `PLACA:  ${placa}`.padEnd(22, ' ');
+    textoTXT += `${cliStr}${placaStr}|\n`;
+    
+    // Linha do Modelo
+    textoTXT += `| MODELO: ${modelo.padEnd(68, ' ')}|\n`;
+    textoTXT += `+------------------------------------------------------------------------------+\n`;
+    
+    // Linha de Título das Colunas
+    textoTXT += `| --LOCACAO--     --QUANT--  --ITEM--  --DESCRICAO--                --CHECK--  |\n`;
+    textoTXT += `+------------------------------------------------------------------------------+\n`;
+    textoTXT += `                                                                                \n`;
+
+    // Varre as linhas da tabela e monta as grades
+    linhas.forEach(linha => {
+        if (linha.querySelector('.estado-vazio')) return;
+
+        const locacao = linha.querySelector('.col-locacao')?.innerText.trim() || '';
+        const qtd = linha.querySelector('.col-qtd')?.innerText.trim() || '0';
+        const codigo = linha.querySelector('.col-codigo')?.innerText.trim() || '';
+        const descricao = linha.querySelector('.col-descricao')?.innerText.trim() || '';
+        
+        const checkbox = linha.querySelector('input[type="checkbox"]');
+        const checkSimbolo = checkbox && checkbox.checked ? "[X]" : "[ ]";
+
+        // Ajuste milimétrico de colunas (Total de 78 caracteres de largura interna)
+        const locacaoFormatada = locacao.padEnd(16, ' ');
+        
+        const qtdValor = parseFloat(qtd.replace(',', '.'));
+        const qtdFormatada = qtdValor.toFixed(2).replace('.', ',').padStart(5, ' ');
+        
+        const codigoFormatado = codigo.padStart(6, ' ');
+        const descricaoFormatada = (descricao.length > 33 ? descricao.substring(0, 30) + '...' : descricao).padEnd(33, ' ');
+        const checkFormatado = checkSimbolo.padStart(5, ' ');
+
+        // Unindo as partes para fechar exatamente a borda em 78 caracteres
+        textoTXT += `| ${locacaoFormatada}  ${qtdFormatada}  ${codigoFormatado}      ${descricaoFormatada}  ${checkFormatado} |\n`;
+        textoTXT += `+------------------------------------------------------------------------------+\n`;
+    });
+
+    // Linha de encerramento com assinaturas
+    textoTXT += `| SEPARADOR:                 AUTORIZANTE:                RECEBIDO:             |\n`;
+    textoTXT += `+------------------------------------------------------------------------------+\n`;
+
+    // --- NOVA REGRA DO NOME DO ARQUIVO (SEM O "n" SOBRANDO) ---
+    let nomeArquivo = "r_desconhecido.txt";
+    if (numeroLimpo !== "") {
+        nomeArquivo = `r${numeroLimpo}.txt`; // Gera r15583.txt
+    }
+
+    // Criando o arquivo
+    const blob = new Blob([textoTXT], { type: 'text/plain;charset=utf-8' });
+    const link = document.createElement("a");
+    
+    if (link.download !== undefined) {
+        const url = URL.createObjectURL(blob);
+        link.setAttribute("href", url);
+        link.setAttribute("download", nomeArquivo);
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
     }
 }
