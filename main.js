@@ -508,7 +508,7 @@ function salvarTabelaEmArquivo() {
     const spanNum = document.getElementById('cab-num-romaneio');
     const spanData = document.getElementById('cab-data-romaneio');
     
-    // Captura segura dos dados
+    // Captura segura dos dados direto das tags strong (evita ler lixo textual)
     const requisitante = document.querySelector('#cabecalho-corpo .cabecalho-item:nth-child(1) strong')?.innerText || '---';
     const contato = document.querySelector('#cabecalho-corpo .cabecalho-item:nth-child(2) strong')?.innerText || '---';
     const os = document.querySelector('#cabecalho-corpo .cabecalho-item:nth-child(3) strong')?.innerText || '---';
@@ -516,14 +516,23 @@ function salvarTabelaEmArquivo() {
     const cliente = document.querySelector('#cabecalho-corpo .item-full:nth-of-type(5) strong')?.innerText || '---';
     const modelo = document.querySelector('#cabecalho-corpo .item-full:nth-of-type(6) strong')?.innerText || '---';
 
-    let nRomaneio = spanNum ? spanNum.innerText.replace('Romaneio Nº:', '').trim() : "---";
-    let dataDoc = spanData ? spanData.innerText.replace('Data:', '').trim() : "---";
+    // LIMPEZA DEFINITIVA DO NOME: Pegamos apenas os dígitos do número do romaneio
+    let nRomaneio = spanNum ? spanNum.innerText : "";
+    let matchNumero = nRomaneio.match(/\d+/); // Pega apenas os números (Ex: 15583)
+    let numeroLimpo = matchNumero ? matchNumero[0] : "";
+
+    // Se por acaso o romaneio não tiver número, tenta usar a OS como quebra-galho no nome
+    if (numeroLimpo === "" && os !== '---') {
+        numeroLimpo = os.trim();
+    }
+
+    let dataDoc = spanData ? spanData.innerText.replace(/Data:/gi, '').trim() : "---";
 
     // --- MONTAGEM DO ARQUIVO COM ESPAÇAMENTOS PRECISOS ---
     let textoTXT = `                                                                | REEMISSÃO |\n`;
     
     // Alinhamento exato do topo do romaneio
-    const topoInfo = `Nº:   ${nRomaneio} - ${dataDoc} -+`;
+    const topoInfo = `Nº:   ${numeroLimpo} - ${dataDoc} -+`;
     textoTXT += `+-----------------     ROMANEIO DE RETIRADA    ${topoInfo.padStart(55)}\n`;
     
     // Linha do Requisitante, Contato e OS
@@ -559,7 +568,6 @@ function salvarTabelaEmArquivo() {
         const checkbox = linha.querySelector('input[type="checkbox"]');
         const checkSimbolo = checkbox && checkbox.checked ? "[X]" : "[ ]";
 
-        // Ajuste milimétrico de colunas (Total de 78 caracteres de largura interna)
         const locacaoFormatada = locacao.padEnd(16, ' ');
         
         const qtdValor = parseFloat(qtd.replace(',', '.'));
@@ -569,21 +577,17 @@ function salvarTabelaEmArquivo() {
         const descricaoFormatada = (descricao.length > 33 ? descricao.substring(0, 30) + '...' : descricao).padEnd(33, ' ');
         const checkFormatado = checkSimbolo.padStart(5, ' ');
 
-        // Unindo as partes para fechar exatamente a borda em 78 caracteres
         textoTXT += `| ${locacaoFormatada}  ${qtdFormatada}  ${codigoFormatado}      ${descricaoFormatada}  ${checkFormatado} |\n`;
         textoTXT += `+------------------------------------------------------------------------------+\n`;
     });
 
-    // Linha de encerramento com assinaturas
     textoTXT += `| SEPARADOR:                 AUTORIZANTE:                RECEBIDO:             |\n`;
     textoTXT += `+------------------------------------------------------------------------------+\n`;
 
-    // --- NOVA REGRA DO NOME DO ARQUIVO ---
+    // --- NOVA REGRA DO NOME DO ARQUIVO: EXCLUSIVAMENTE r + NÚMERO ---
     let nomeArquivo = "r_desconhecido.txt";
-    if (nRomaneio !== "---") {
-        // Remove qualquer caractere estranho e deixa só a letra r + número
-        const numeroLimpo = nRomaneio.replace(/\D/g, ''); 
-        nomeArquivo = `r${numeroLimpo}.txt`;
+    if (numeroLimpo !== "") {
+        nomeArquivo = `r${numeroLimpo}.txt`; // Gera r15583.txt
     }
 
     // Criando o arquivo
