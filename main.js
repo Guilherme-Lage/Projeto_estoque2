@@ -156,9 +156,11 @@ function filtrarTabela() {
     const busca = document.getElementById('busca-codigo').value.toLowerCase().trim();
     const linhas = document.querySelectorAll('#corpo-tabela tr');
 
-    // Se o campo de busca estiver vazio, apenas reseta a tabela sem marcar nada
+    // Se o campo de busca estiver vazio, apenas reseta a visibilidade
     if (busca === "") {
         linhas.forEach(linha => {
+            if (linha.querySelector('.estado-vazio')) return; 
+            
             if (mostrarApenasPendentes && linha.classList.contains('linha-conferida')) {
                 linha.style.display = 'none';
             } else {
@@ -168,52 +170,94 @@ function filtrarTabela() {
         return;
     }
 
-    let linhasVisiveis = [];
+    const buscaEhApenasNumero = /^\d+$/.test(busca);
 
     linhas.forEach(linha => {
-        // Ignora a linha que avisa que a tabela está vazia
         if (linha.querySelector('.estado-vazio')) return;
 
-        const textoLinha = linha.innerText.toLowerCase();
-        const corresponde = textoLinha.includes(busca);
+        const textoCodigo = linha.querySelector('.col-codigo')?.innerText.toLowerCase().trim() || '';
+        const textoDescricao = linha.querySelector('.col-descricao')?.innerText.toLowerCase() || '';
+
+        let corresponde = false;
+
+        if (buscaEhApenasNumero) {
+            // VOLTOU A SER PARCIAL NA BUSCA: Assim você pode digitar "20" e ver o "56202" e o "20" na tela
+            corresponde = textoCodigo.includes(busca);
+        } else {
+            corresponde = textoDescricao.includes(busca);
+        }
 
         if (corresponde) {
             if (mostrarApenasPendentes && linha.classList.contains('linha-conferida')) {
                 linha.style.display = 'none';
             } else {
                 linha.style.display = '';
-                linhasVisiveis.push(linha); // Guarda as linhas que passaram no filtro
             }
         } else {
             linha.style.display = 'none';
         }
     });
+}
 
-    // --- LÓGICA AUTOMÁTICA CORRIGIDA ---
-    // Se a busca resultou em EXATAMENTE 1 item na tela
-    if (linhasVisiveis.length === 1) {
-        // CORREÇÃO AQUI: Adicionado o [0] para pegar o primeiro item da lista de visíveis
-        const linhaUnica = linhasVisiveis[0]; 
-        const checkbox = linhaUnica.querySelector('input[type="checkbox"]');
-        
-        // Se a caixinha existir e ainda não estiver marcada
-        if (checkbox && !checkbox.checked) {
-            checkbox.checked = true;
-            
-            // Extrai o número do ID (ex: "chk-5" vira 5)
-            const matchId = checkbox.id.match(/\d+/);
-            
-            if (matchId) {
-                const idx = parseInt(matchId[0], 10);
-                
-                // Dispara a função para colorir a linha e somar no contador
-                marcarItem(idx, true);
-                
-                console.log(`Sucesso! Item da linha ${idx} marcado automaticamente.`);
+
+// Função que escuta o teclado no campo de busca
+// Função que escuta o teclado no campo de busca
+document.getElementById('busca-codigo').addEventListener('keypress', function(e) {
+    if (e.key === 'Enter') {
+        const busca = this.value.toLowerCase().trim();
+        const linhas = document.querySelectorAll('#corpo-tabela tr');
+        let linhasVisiveis = [];
+
+        // Descobre quais linhas estão visíveis (filtradas) na tela agora
+        linhas.forEach(linha => {
+            if (!linha.querySelector('.estado-vazio') && linha.style.display !== 'none') {
+                linhasVisiveis.push(linha);
             }
+        });
+
+        let linhaParaMarcar = null;
+
+        // REGRA DE SEGURANÇA: Se houver mais de uma linha visível (como o 20 e o 56202)
+        if (linhasVisiveis.length > 1) {
+            // O sistema procura qual delas tem o código EXATAMENTE igual ao digitado
+            linhasVisiveis.forEach(linha => {
+                const textoCodigo = linha.querySelector('.col-codigo')?.innerText.toLowerCase().trim() || '';
+                if (textoCodigo === busca) {
+                    linhaParaMarcar = linha;
+                }
+            });
+        } else if (linhasVisiveis.length === 1) {
+            // Se sobrou apenas 1 na tela, já escolhe ela direto
+            linhaParaMarcar = linhasVisiveis[0];
+        }
+
+        // Se encontrou a linha correta para marcar
+        if (linhaParaMarcar) {
+            const checkbox = linhaParaMarcar.querySelector('input[type="checkbox"]');
+            
+            if (checkbox && !checkbox.checked) {
+                checkbox.checked = true;
+                
+                const matchId = checkbox.id.match(/\d+/);
+                if (matchId) {
+                    const idx = parseInt(matchId, 10);
+                    
+                    // Marca o item e soma no contador
+                    marcarItem(idx, true);
+                    
+                    // Limpa o campo de busca e restaura a tabela
+                    this.value = '';
+                    filtrarTabela();
+                    
+                    console.log(`Item ${idx} conferido com sucesso via busca inteligente.`);
+                }
+            }
+        } else {
+            // Alerta visual se houver ambiguidade
+            alert("Atenção: Mais de um item corresponde a essa busca. Digite o código completo ou clique manualmente!");
         }
     }
-}
+});
 
 
 function alternarVisibilidade() {
