@@ -153,24 +153,58 @@ function atualizarContador() {
 let mostrarApenasPendentes = false;
 
 function filtrarTabela() {
-    const busca = document.getElementById('busca-codigo').value.toLowerCase();
+    const busca = document.getElementById('busca-codigo').value.toLowerCase().trim();
     const linhas = document.querySelectorAll('#corpo-tabela tr');
 
+    // Se o campo de busca estiver vazio, não faz marcação automática
+    if (busca === "") {
+        linhas.forEach(linha => {
+            if (mostrarApenasPendentes && linha.classList.contains('linha-conferida')) {
+                linha.style.display = 'none';
+            } else {
+                linha.style.display = '';
+            }
+        });
+        return;
+    }
+
+    let linhasVisiveis = [];
+
     linhas.forEach(linha => {
+        
+        if (linha.querySelector('.estado-vazio')) return;
+
         const textoLinha = linha.innerText.toLowerCase();
         const corresponde = textoLinha.includes(busca);
-
 
         if (corresponde) {
             if (mostrarApenasPendentes && linha.classList.contains('linha-conferida')) {
                 linha.style.display = 'none';
             } else {
                 linha.style.display = '';
+                linhasVisiveis.push(linha); 
             }
         } else {
             linha.style.display = 'none';
         }
     });
+
+  //Quando pesquisa marca automaticamente 
+    if (linhasVisiveis.length === 1) {
+        const linhaUnica = linhasVisiveis[0];
+        const checkbox = linhaUnica.querySelector('input[type="checkbox"]');
+        
+        
+        if (checkbox && !checkbox.checked) {
+            checkbox.checked = true;
+            
+            const idx = checkbox.id.replace('chk-', '');
+           
+            marcarItem(parseInt(idx), true);
+            
+            console.log(`Item automático conferido: Linha ${idx}`);
+        }
+    }
 }
 
 function alternarVisibilidade() {
@@ -192,7 +226,7 @@ function salvarNoHistorico() {
     // 1. CAPTURA OS ITENS DA TABELA
     const itensAtuais = [];
     const linhas = document.querySelectorAll('#corpo-tabela tr');
-
+    
     linhas.forEach((linha) => {
         if (linha.querySelector('.estado-vazio')) return;
 
@@ -205,20 +239,27 @@ function salvarNoHistorico() {
         itensAtuais.push({ locacao, qtd, codigo, descricao, conferido });
     });
 
-    // 2. NOVA LÓGICA: Captura os dados do cabeçalho
+    // 2. CAPTURA OS DADOS DO CABEÇALHO (MÉTODO SEGURO)
     const cabecalhoCorpo = document.getElementById('cabecalho-corpo');
     let dadosCabecalho = null;
 
     if (cabecalhoCorpo) {
         const strongs = cabecalhoCorpo.querySelectorAll('strong');
-        // Extrai a numeração do topo se houver
-        const topoTexto = document.querySelector('.cabecalho-topo')?.innerText || '';
-        const nRomaneio = topoTexto.match(/Nº:\s*(.*)/)?.[1] || "---";
-        const dataHoraDoc = topoTexto.match(/Data:\s*(.*)/)?.[1] || "---";
+        
+        // Pegamos as tags de texto lá do topo do painel azul
+        const spansTopo = document.querySelectorAll('.cabecalho-topo span');
+        let nRomaneio = "---";
+        let dataHora = "---";
+
+        // Se existirem as duas informações no topo, pegamos limpando o texto
+        if (spansTopo.length >= 2) {
+            nRomaneio = spansTopo[0].innerText.replace('Romaneio Nº:', '').trim();
+            dataHora = spansTopo[1].innerText.replace('Data:', '').trim();
+        }
 
         dadosCabecalho = {
             nRomaneio: nRomaneio,
-            dataHora: dataHoraDoc,
+            dataHora: dataHora,
             requisitante: strongs[0]?.innerText || "---",
             contato: strongs[1]?.innerText || "---",
             os: strongs[2]?.innerText || "---",
@@ -234,7 +275,7 @@ function salvarNoHistorico() {
         total: totalItens,
         concluidos: conferidos,
         produtos: itensAtuais,
-        cabecalho: dadosCabecalho // Guardando os dados do cliente, placa, etc.
+        cabecalho: dadosCabecalho
     };
 
     let historico = JSON.parse(localStorage.getItem('historico_hontec') || '[]');
@@ -355,30 +396,27 @@ function carregarDoHistorico(indice) {
         return;
     }
 
-    // 1. Restaurar os contadores globais
     totalItens = romaneioSelecionado.total;
     conferidos = romaneioSelecionado.concluidos;
 
-    // 2. Restaurar o título do Romaneio
     const elementoInfo = document.getElementById('info-romaneio');
     elementoInfo.style.display = 'block';
     elementoInfo.textContent = romaneioSelecionado.nome;
 
-    // 3. Exibir os botões de controle e o contador
     document.getElementById('secao-contador').style.display = 'block';
     document.getElementById('botao-limpar').style.display = 'inline-block';
     atualizarContador();
 
-    // 4. NOVA LÓGICA: Restaurar a tabela de cabeçalho
+    // 4. RESTAURANDO COM AS CAIXINHAS IDENTIFICADAS
     const painel = document.getElementById('painel-cabecalho');
     if (romaneioSelecionado.cabecalho && painel) {
         painel.style.display = 'block';
         const cab = romaneioSelecionado.cabecalho;
-
+        
         painel.innerHTML = `
             <div class="cabecalho-topo">
-                <span>Romaneio Nº: ${cab.nRomaneio}</span>
-                <span>Data: ${cab.dataHora}</span>
+                <span id="cab-num-romaneio">Romaneio Nº: ${cab.nRomaneio}</span>
+                <span id="cab-data-romaneio">Data: ${cab.dataHora}</span>
             </div>
             <div class="cabecalho-corpo" id="cabecalho-corpo">
                 <div class="cabecalho-item"><span>REQ:</span> <strong>${cab.requisitante}</strong></div>
@@ -390,10 +428,9 @@ function carregarDoHistorico(indice) {
             </div>
         `;
     } else if (painel) {
-        painel.style.display = 'none'; // Esconde caso o registro antigo não tenha cabeçalho
+        painel.style.display = 'none';
     }
 
-    // 5. Montar as linhas na tabela novamente
     const corpoTabela = document.getElementById('corpo-tabela');
     corpoTabela.innerHTML = '';
 
@@ -422,7 +459,6 @@ function carregarDoHistorico(indice) {
         corpoTabela.appendChild(tr);
     });
 
-    // Fecha a janela do histórico após carregar
     document.getElementById('secao-historico').style.display = 'none';
 }
 
