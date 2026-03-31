@@ -424,8 +424,8 @@ function carregarDoHistorico(indice) {
         
         painel.innerHTML = `
             <div class="cabecalho-topo">
-                <span id="cab-num-romaneio">Romaneio Nº: ${cab.nRomaneio}</span>
-                <span id="cab-data-romaneio">Data: ${cab.dataHora}</span>
+                <span id="cab-num-romaneio">${cab.nRomaneio}</span>
+                <span id="cab-data-romaneio"> ${cab.dataHora}</span>
             </div>
             <div class="cabecalho-corpo" id="cabecalho-corpo">
                 <div class="cabecalho-item"><span>REQ:</span> <strong>${cab.requisitante}</strong></div>
@@ -496,6 +496,7 @@ function limparTabela() {
     }
 }
 
+
 function salvarTabelaEmArquivo() {
     const linhas = document.querySelectorAll('#corpo-tabela tr');
     
@@ -504,7 +505,6 @@ function salvarTabelaEmArquivo() {
         return;
     }
 
-    // 1. CAPTURA O NÚMERO DO ROMANEIO DIRETAMENTE DO CABEÇALHO AZUL
     const spanNum = document.getElementById('cab-num-romaneio');
     const spanData = document.getElementById('cab-data-romaneio');
     
@@ -516,23 +516,14 @@ function salvarTabelaEmArquivo() {
     const cliente = document.querySelector('#cabecalho-corpo .item-full:nth-of-type(5) strong')?.innerText || '---';
     const modelo = document.querySelector('#cabecalho-corpo .item-full:nth-of-type(6) strong')?.innerText || '---';
 
-    // LIMPEZA CORRIGIDA: Pegamos o texto e extraímos apenas os números
-    let nRomaneio = spanNum ? spanNum.innerText : "";
-    let matchNumero = nRomaneio.match(/\d+/); // Busca a primeira sequência de números (ex: 15583)
-    let numeroLimpo = matchNumero ? matchNumero[0] : "";
-
+    let nRomaneio = spanNum ? spanNum.innerText.replace('Romaneio Nº:', '').trim() : "---";
     let dataDoc = spanData ? spanData.innerText.replace('Data:', '').trim() : "---";
-
-    // Se mesmo assim não achar número, usamos o número da OS como quebra-galho para não salvar sem nome
-    if (numeroLimpo === "" && os !== '---') {
-        numeroLimpo = os.trim();
-    }
 
     // --- MONTAGEM DO ARQUIVO COM ESPAÇAMENTOS PRECISOS ---
     let textoTXT = `                                                                | REEMISSÃO |\n`;
     
     // Alinhamento exato do topo do romaneio
-    const topoInfo = `Nº:   ${numeroLimpo} - ${dataDoc} -+`;
+    const topoInfo = `Nº:   ${nRomaneio} - ${dataDoc} -+`;
     textoTXT += `+-----------------     ROMANEIO DE RETIRADA    ${topoInfo.padStart(55)}\n`;
     
     // Linha do Requisitante, Contato e OS
@@ -587,10 +578,12 @@ function salvarTabelaEmArquivo() {
     textoTXT += `| SEPARADOR:                 AUTORIZANTE:                RECEBIDO:             |\n`;
     textoTXT += `+------------------------------------------------------------------------------+\n`;
 
-    // --- NOVA REGRA DO NOME DO ARQUIVO (SEM O "n" SOBRANDO) ---
+    // --- NOVA REGRA DO NOME DO ARQUIVO ---
     let nomeArquivo = "r_desconhecido.txt";
-    if (numeroLimpo !== "") {
-        nomeArquivo = `r${numeroLimpo}.txt`; // Gera r15583.txt
+    if (nRomaneio !== "---") {
+        // Remove qualquer caractere estranho e deixa só a letra r + número
+        const numeroLimpo = nRomaneio.replace(/\D/g, ''); 
+        nomeArquivo = `r${numeroLimpo}.txt`;
     }
 
     // Criando o arquivo
