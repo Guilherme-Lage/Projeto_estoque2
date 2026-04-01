@@ -152,25 +152,31 @@ function atualizarContador() {
 
 let mostrarApenasPendentes = false;
 
-function filtrarTabela() {
+async function filtrarTabela() {
     const busca = document.getElementById('busca-codigo').value.toLowerCase().trim();
     const linhas = document.querySelectorAll('#corpo-tabela tr');
 
-    // Se o campo de busca estiver vazio, apenas reseta a visibilidade
     if (busca === "") {
         linhas.forEach(linha => {
-            if (linha.querySelector('.estado-vazio')) return; 
-            
-            if (mostrarApenasPendentes && linha.classList.contains('linha-conferida')) {
-                linha.style.display = 'none';
-            } else {
-                linha.style.display = '';
-            }
+            if (linha.querySelector('.estado-vazio')) return;
+            linha.style.display = (mostrarApenasPendentes && linha.classList.contains('linha-conferida')) ? 'none' : '';
         });
         return;
     }
 
-    const buscaEhApenasNumero = /^\d+$/.test(busca);
+    const buscaEhNumero = /^\d+$/.test(busca);
+    let codigoTraduzido = busca;
+
+    // Se for um EAN (Código de barras longo), tenta traduzir pelo banco
+    if (busca.length > 8 && buscaEhNumero) {
+        try {
+            const resposta = await fetch(`http://localhost:3000/buscar-produto/${busca}`);
+            if (resposta.ok) {
+                const produto = await resposta.json();
+                codigoTraduzido = produto.ITEM_ESTOQUE_PUB.toString().toLowerCase().trim();
+            }
+        } catch (err) { console.error("Erro no banco:", err); }
+    }
 
     linhas.forEach(linha => {
         if (linha.querySelector('.estado-vazio')) return;
@@ -178,86 +184,73 @@ function filtrarTabela() {
         const textoCodigo = linha.querySelector('.col-codigo')?.innerText.toLowerCase().trim() || '';
         const textoDescricao = linha.querySelector('.col-descricao')?.innerText.toLowerCase() || '';
 
+        // BUSCA PARCIAL: Usa .includes() para você não precisar digitar o código todo
         let corresponde = false;
-
-        if (buscaEhApenasNumero) {
-            // VOLTOU A SER PARCIAL NA BUSCA: Assim você pode digitar "20" e ver o "56202" e o "20" na tela
-            corresponde = textoCodigo.includes(busca);
+        if (buscaEhNumero) {
+            corresponde = textoCodigo.includes(codigoTraduzido);
         } else {
             corresponde = textoDescricao.includes(busca);
         }
 
-        if (corresponde) {
-            if (mostrarApenasPendentes && linha.classList.contains('linha-conferida')) {
-                linha.style.display = 'none';
-            } else {
-                linha.style.display = '';
-            }
-        } else {
-            linha.style.display = 'none';
-        }
+        linha.style.display = corresponde ? '' : 'none';
     });
 }
 
-
-// Função que escuta o teclado no campo de busca
-// Função que escuta o teclado no campo de busca
-document.getElementById('busca-codigo').addEventListener('keypress', function(e) {
+document.getElementById('busca-codigo').addEventListener('keypress', async function(e) {
     if (e.key === 'Enter') {
-        const busca = this.value.toLowerCase().trim();
-        const linhas = document.querySelectorAll('#corpo-tabela tr');
-        let linhasVisiveis = [];
+        e.preventDefault();
+        const termoBusca = this.value.trim();
+        if (termoBusca === "") return;
 
-        // Descobre quais linhas estão visíveis (filtradas) na tela agora
-        linhas.forEach(linha => {
-            if (!linha.querySelector('.estado-vazio') && linha.style.display !== 'none') {
-                linhasVisiveis.push(linha);
-            }
-        });
-
-        let linhaParaMarcar = null;
-
-        // REGRA DE SEGURANÇA: Se houver mais de uma linha visível (como o 20 e o 56202)
-        if (linhasVisiveis.length > 1) {
-            // O sistema procura qual delas tem o código EXATAMENTE igual ao digitado
-            linhasVisiveis.forEach(linha => {
-                const textoCodigo = linha.querySelector('.col-codigo')?.innerText.toLowerCase().trim() || '';
-                if (textoCodigo === busca) {
-                    linhaParaMarcar = linha;
-                }
-            });
-        } else if (linhasVisiveis.length === 1) {
-            // Se sobrou apenas 1 na tela, já escolhe ela direto
-            linhaParaMarcar = linhasVisiveis[0];
-        }
-
-        // Se encontrou a linha correta para marcar
-        if (linhaParaMarcar) {
-            const checkbox = linhaParaMarcar.querySelector('input[type="checkbox"]');
+        try {
+            const resposta = await fetch(`http://localhost:3000/buscar-produto/${termoBusca}`);
             
-            if (checkbox && !checkbox.checked) {
-                checkbox.checked = true;
-                
-                const matchId = checkbox.id.match(/\d+/);
-                if (matchId) {
-                    const idx = parseInt(matchId, 10);
-                    
-                    // Marca o item e soma no contador
-                    marcarItem(idx, true);
-                    
-                    // Limpa o campo de busca e restaura a tabela
+            if (resposta.ok) {
+                const produto = await resposta.json();
+                const codigoInterno = produto.ITEM_ESTOQUE_PUB.toString().trim();
+                const nomeProduto = produto.DES_ITEM_ESTOQUE || "Produto sem descrição";
+
+                let achouNoRomaneio = false;
+                const linhas = document.querySelectorAll('#corpo-tabela tr');
+
+                for (let linha of linhas) {
+                    const col = linha.querySelector('.col-codigo');
+                    if (col && col.innerText.trim() === codigoInterno) {
+                        const cb = linha.querySelector('input[type="checkbox"]');
+                        if (cb) {
+                            cb.checked = true;
+                            marcarItem(parseInt(cb.id.match(/\d+/)), true);
+                            
+                            this.value = '';
+                            filtrarTabela(); 
+                            linha.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                            achouNoRomaneio = true;
+                            break;
+                        }
+                    }
+                }
+
+                // CASO NÃO ACHE NO ROMANEIO ATUAL
+                if (!achouNoRomaneio) {
+                    // Mostra o nome do item que o banco de dados retornou
+                    alert(`Produto ENCONTRADO: [${nomeProduto}]\nCód: ${codigoInterno}\n\n⚠️ Mas ele NÃO CONSTA neste romaneio!`);
                     this.value = '';
                     filtrarTabela();
-                    
-                    console.log(`Item ${idx} conferido com sucesso via busca inteligente.`);
                 }
+
+            } else {
+                alert("Código de barras não cadastrado no banco da Hontec.");
+                this.value = '';
+                filtrarTabela();
             }
-        } else {
-            // Alerta visual se houver ambiguidade
-            alert("Atenção: Mais de um item corresponde a essa busca. Digite o código completo ou clique manualmente!");
+        } catch (err) {
+            console.error(err);
+            this.value = '';
+            filtrarTabela();
         }
     }
 });
+
 
 
 function alternarVisibilidade() {
