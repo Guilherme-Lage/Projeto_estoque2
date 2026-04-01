@@ -239,7 +239,7 @@ document.getElementById('busca-codigo').addEventListener('keypress', async funct
                 }
 
             } else {
-                alert("Código de barras não cadastrado no banco da Hontec.");
+                alert("Código de barras não cadastrado no banco da Hontec. \n\n ⚠️Favor verificar o cadastro do item escaneado");
                 this.value = '';
                 filtrarTabela();
             }
@@ -535,12 +535,51 @@ function limparTabela() {
 
 
 function salvarTabelaEmArquivo() {
+    
+    async function salvarTabelaEmArquivo() {
     const linhas = document.querySelectorAll('#corpo-tabela tr');
     
+    // 1. VERIFICAÇÃO INICIAL (Já deve existir no seu código)
     if (linhas.length === 0 || document.querySelector('.estado-vazio')) {
-        alert("Atenção: Carregue um romaneio na tabela primeiro para poder salvar!");
+        alert("Carregue um romaneio primeiro!");
         return;
     }
+
+    // --- COLOQUE O CÓDIGO NOVO AQUI (DAQUI ATÉ O PRÓXIMO COMENTÁRIO) ---
+    
+    // Preparando os dados para o Banco SQLite
+    const itensParaBanco = [];
+    linhas.forEach(linha => {
+        if (!linha.querySelector('.estado-vazio')) {
+            itensParaBanco.push({
+                codigo: linha.querySelector('.col-codigo')?.innerText.trim(),
+                conferido: linha.querySelector('input[type="checkbox"]')?.checked
+            });
+        }
+    });
+
+    const numRommaneio = document.getElementById('cab-num-romaneio')?.innerText.replace(/\D/g, '') || "0";
+    
+    const dadosSalvar = {
+        id: numRommaneio,
+        nome: `Romaneio ${numRommaneio}`,
+        data: new Date().toLocaleString('pt-BR'),
+        itens: itensParaBanco,
+        status: conferidos === totalItens ? 'FECHADO' : 'ABERTO'
+    };
+
+    // Envia para o Servidor Node.js
+    try {
+        await fetch('http://localhost:3000/salvar-romaneio', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(dadosSalvar)
+        });
+        console.log("Salvo no SQLite com sucesso!");
+    } catch (err) {
+        console.error("Erro ao salvar no banco local:", err);
+    }
+
 
     const spanNum = document.getElementById('cab-num-romaneio');
     const spanData = document.getElementById('cab-data-romaneio');
@@ -641,3 +680,4 @@ function salvarTabelaEmArquivo() {
         document.body.removeChild(link);
     }
 }
+}   
