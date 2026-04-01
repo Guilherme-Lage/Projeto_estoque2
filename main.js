@@ -386,31 +386,45 @@ function atualizarDadosDoHistorico() {
     }
 }
 async function colarDoApollo() {
+    // 1. Salva o que já estiver na tela no histórico antes de limpar
     if (typeof totalItens !== 'undefined' && totalItens > 0) {
         salvarNoHistorico();
     }
+
     try {
+        // 2. Avisa o Node para rodar o Python (que vai copiar a aba e fechar o Bloco de Notas)
+        // Certifique-se de ter criado a rota '/executar-python' no seu server.js
+        await fetch('http://localhost:3000/executar-python');
 
-        const texto = await navigator.clipboard.readText();
+        // 3. Pequena pausa (800ms) para dar tempo do Python fazer o Ctrl+C e fechar a aba
+        setTimeout(async () => {
+            try {
+                const texto = await navigator.clipboard.readText();
 
-        if (texto.trim() === "") {
-            alert("A área de transferência está vazia. Copie o romaneio no Apollo primeiro!");
-            return;
-        }
+                if (texto.trim() === "") {
+                    alert("O Python não encontrou texto para copiar ou a área de transferência está vazia!");
+                    return;
+                }
 
-        // Chama sua função que já existe para processar o texto
-        processarTexto(texto);
+                // 4. Processa o texto que o Python acabou de "jogar" no Ctrl+C
+                processarTexto(texto);
 
-        // Feedback visual para o usuário
-        document.getElementById('legenda-arquivo').textContent = "Processado via Copiar/Colar";
-        console.log("Romaneio processado sem salvar arquivo.");
+                // Feedback visual
+                document.getElementById('legenda-arquivo').textContent = "Importado via Python (Aba Bloco de Notas)";
+                console.log("Romaneio processado automaticamente via script Python.");
+
+            } catch (clipboardErr) {
+                alert("Erro ao ler área de transferência. Clique na página e tente de novo.");
+            }
+        }, 800); 
 
     } catch (err) {
-
-        alert("Não foi possível colar automaticamente. Use Ctrl+V no campo de busca.");
-        console.error("Erro ao colar:", err);
+        // Caso o servidor Node esteja desligado ou a rota não exista
+        alert("Não foi possível acionar o Python. Verifique se o servidor Node está rodando.");
+        console.error("Erro na integração Python:", err);
     }
 }
+
 
 function atualizarContador() {
     const elementoContador = document.getElementById('secao-contador');

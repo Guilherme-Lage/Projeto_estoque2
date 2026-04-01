@@ -84,3 +84,24 @@ app.listen(port, '0.0.0.0', () => {
     console.log(`💻 Local: http://192.168.15.254:${port}`);
     console.log(`📱 Celular: Use o IP do seu PC na porta ${port}`);
 });
+const { exec } = require('child_process'); // Importa o comando para rodar programas externos
+
+// ROTA PARA EXECUTAR O SEU SCRIPT PYTHON
+app.get('/executar-python', (req, res) => {
+    // AJUSTE AQUI: Coloque o caminho completo onde o seu arquivo .py está salvo
+    // Exemplo: 'python "C:/Users/Usuario/Desktop/meu_script.py"'
+    const caminhoPython = 'python "C:\Users\TI\Downloads\monitor_bloco_notas.py"';
+
+    exec(caminhoPython, (error, stdout, stderr) => {
+        if (error) {
+            console.error(`Erro ao rodar Python: ${error.message}`);
+            return res.status(500).json({ erro: error.message });
+        }
+        if (stderr) {
+            console.error(`Erro no Script: ${stderr}`);
+        }
+        
+        console.log("✅ Script Python executado com sucesso!");
+        res.json({ mensagem: "Python finalizado!" });
+    });
+});
