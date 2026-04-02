@@ -2,6 +2,9 @@ const express = require('express');
 const sqlite3 = require('sqlite3').verbose();
 const cors = require('cors');
 const path = require('path');
+const { exec, spawn } = require('child_process');
+const fs = require('fs');
+const os = require('os');
 
 const app = express();
 const port = 3000;
@@ -9,7 +12,7 @@ const port = 3000;
 app.use(cors());
 app.use(express.json({ limit: '50mb' }));
 
-// --- CONFIGURAÇÃO DO BANCO DE DADOS ---
+// --- BANCO DE DADOS ---
 const dbPath = path.resolve(__dirname, 'oficina.db');
 const db = new sqlite3.Database(dbPath, (err) => {
     if (err) console.error("Erro ao abrir banco:", err.message);
@@ -32,25 +35,35 @@ db.serialize(() => {
         nome TEXT,
         data TEXT,
         cliente TEXT,
+        total_itens INTEGER,
+        conferidos INTEGER,
         itens_json TEXT,
+        txt_formatado TEXT,
         status TEXT
     )`);
+
+    // Migração segura: adiciona colunas novas se a tabela já existia sem elas
+    db.run(`ALTER TABLE romaneios ADD COLUMN total_itens INTEGER`, () => {});
+    db.run(`ALTER TABLE romaneios ADD COLUMN conferidos INTEGER`, () => {});
+    db.run(`ALTER TABLE romaneios ADD COLUMN txt_formatado TEXT`, () => {});
 });
 
 // --- ROTAS ---
 
 // 1. Salvar ou Atualizar Romaneio
 app.post('/salvar-romaneio', (req, res) => {
-    const { id, nome, data, cliente, itens, status } = req.body;
-    const sql = `INSERT OR REPLACE INTO romaneios (id, nome, data, cliente, itens_json, status) VALUES (?, ?, ?, ?, ?, ?)`;
+    const { id, nome, data, cliente, total_itens, conferidos, itens, txt_formatado, status } = req.body;
+    const sql = `INSERT OR REPLACE INTO romaneios 
+        (id, nome, data, cliente, total_itens, conferidos, itens_json, txt_formatado, status) 
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`;
 
-    db.run(sql, [id, nome, data, cliente, JSON.stringify(itens), status], function (err) {
+    db.run(sql, [id, nome, data, cliente, total_itens, conferidos, JSON.stringify(itens), txt_formatado, status], function (err) {
         if (err) return res.status(500).json({ erro: err.message });
         res.json({ mensagem: "Romaneio salvo com sucesso!" });
     });
 });
 
-// 2. Buscar todos os produtos (Corrigido o nome da tabela)
+// 2. Buscar todos os produtos
 app.get('/produtos', (req, res) => {
     db.all("SELECT * FROM itens_estoque", [], (err, rows) => {
         if (err) return res.status(500).json({ erro: err.message });
@@ -58,7 +71,7 @@ app.get('/produtos', (req, res) => {
     });
 });
 
-// 3. Buscar produto por Código ou EAN (Movido para antes do listen)
+// 3. Buscar produto por Código ou EAN
 app.get('/buscar-produto/:termo', (req, res) => {
     const termo = req.params.termo;
     const sql = `SELECT * FROM itens_estoque WHERE ITEM_ESTOQUE_PUB = ? OR COD_EAN_GTIN = ?`;
@@ -78,18 +91,27 @@ app.get('/romaneio/:id', (req, res) => {
     });
 });
 
-// Inicialização
-app.listen(port, '0.0.0.0', () => {
-    console.log(`\n✅ Servidor Hontec Ativo!`);
-    console.log(`💻 Local: http://192.168.15.254:${port}`);
-    console.log(`📱 Celular: Use o IP do seu PC na porta ${port}`);
+// 5. Listar romaneios resumidos
+app.get("/romaneios", (req, res) => {
+    const sql = `SELECT id, nome, data, cliente, total_itens, conferidos, status FROM romaneios ORDER BY data DESC`;
+    db.all(sql, [], (err, rows) => {
+        if (err) return res.status(500).json({ erro: err.message });
+        res.json(rows);
+    });
 });
-const { exec, spawn } = require('child_process');
-const { execSync } = require('child_process');
 
+// 5b. Buscar txt de romaneio especifico
+app.get("/romaneio-txt/:id", (req, res) => {
+    db.get("SELECT txt_formatado FROM romaneios WHERE id = ?", [req.params.id], (err, row) => {
+        if (err) return res.status(500).json({ erro: err.message });
+        if (!row) return res.status(404).json({ mensagem: "Nao encontrado" });
+        res.json({ txt_formatado: row.txt_formatado });
+    });
+});
+
+// 6. Inicia o monitor do Bloco de Notas em background
 let monitorProcesso = null;
 
-// Inicia o monitor em background (não bloqueia o servidor)
 app.get('/executar-python', (req, res) => {
     if (monitorProcesso && !monitorProcesso.killed) {
         console.log('⚠️ Monitor já está rodando.');
@@ -106,14 +128,12 @@ app.get('/executar-python', (req, res) => {
     res.json({ mensagem: 'iniciado' });
 });
 
-// Abre o Bloco de Notas, copia o conteúdo e fecha — usa VBS para ter permissão de janela
+// 6. Abre o Bloco de Notas, copia e fecha a aba — usa VBS para permissão de janela
 app.get('/copiar-romaneio', (req, res) => {
     const scriptPath = path.resolve(__dirname, 'copiar_romaneio.py');
-    const tempFile = path.join(require('os').tmpdir(), 'romaneio_copiado.txt');
-    const vbsPath = path.join(require('os').tmpdir(), 'rodar_python.vbs');
-    const fs = require('fs');
+    const tempFile = path.join(os.tmpdir(), 'romaneio_copiado.txt');
+    const vbsPath = path.join(os.tmpdir(), 'rodar_python.vbs');
 
-    // Cria um .vbs temporário que roda o Python com permissão de janela
     const vbsConteudo = `Set oShell = CreateObject("WScript.Shell")\noShell.Run "python """ & "${scriptPath.replace(/\\/g, '\\\\')}" & """", 1, True`;
     fs.writeFileSync(vbsPath, vbsConteudo);
 
@@ -130,4 +150,11 @@ app.get('/copiar-romaneio', (req, res) => {
             res.status(500).json({ erro: 'Arquivo temporário não encontrado.' });
         }
     });
+});
+
+// --- INICIALIZAÇÃO ---
+app.listen(port, '0.0.0.0', () => {
+    console.log(`\n✅ Servidor Hontec Ativo!`);
+    console.log(`💻 Local: http://localhost:${port}`);
+    console.log(`📱 Celular: Use o IP do seu PC na porta ${port}`);
 });

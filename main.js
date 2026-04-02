@@ -550,150 +550,126 @@ function limparTabela() {
 }
 
 
-function salvarTabelaEmArquivo() {
+async function salvarTabelaEmArquivo() {
+    const linhas = document.querySelectorAll('#corpo-tabela tr');
 
-    async function salvarTabelaEmArquivo() {
-        const linhas = document.querySelectorAll('#corpo-tabela tr');
+    if (linhas.length === 0 || document.querySelector('.estado-vazio')) {
+        alert("Carregue um romaneio primeiro!");
+        return;
+    }
 
-        // 1. VERIFICAÇÃO INICIAL (Já deve existir no seu código)
-        if (linhas.length === 0 || document.querySelector('.estado-vazio')) {
-            alert("Carregue um romaneio primeiro!");
+    // ── Captura itens da tabela ──────────────────────────────
+    const itensParaBanco = [];
+    linhas.forEach(linha => {
+        if (!linha.querySelector('.estado-vazio')) {
+            itensParaBanco.push({
+                locacao:   linha.querySelector('.col-locacao')?.innerText.trim() || '',
+                qtd:       linha.querySelector('.col-qtd')?.innerText.trim() || '0',
+                codigo:    linha.querySelector('.col-codigo')?.innerText.trim() || '',
+                descricao: linha.querySelector('.col-descricao')?.innerText.trim() || '',
+                conferido: linha.querySelector('input[type="checkbox"]')?.checked || false
+            });
+        }
+    });
+
+    // ── Captura cabeçalho ────────────────────────────────────
+    const spansTopo    = document.querySelectorAll('.cabecalho-topo span');
+    const strongs      = document.querySelectorAll('#cabecalho-corpo strong');
+    const textoRom     = spansTopo[0]?.innerText || '';
+    const nRomaneio    = textoRom.replace(/Romaneio\s*Nº\s*:/i, '').trim() || '0';
+    const dataRom      = spansTopo[1]?.innerText.replace(/Data\s*:/i, '').trim() || '---';
+    const requisitante = strongs[0]?.innerText || '---';
+    const contato      = strongs[1]?.innerText || '---';
+    const os           = strongs[2]?.innerText || '---';
+    const placa        = strongs[3]?.innerText || '---';
+    const cliente      = strongs[4]?.innerText || '---';
+    const modelo       = strongs[5]?.innerText || '---';
+    const numeroLimpo  = nRomaneio.replace(/\D/g, '') || Date.now().toString();
+
+    // ── Monta TXT formatado ──────────────────────────────────
+    let txt = `                                                                | REEMISSÃO |\n`;
+    const topoInfo = `Nº:   ${numeroLimpo} - ${dataRom} -+`;
+    txt += `+-----------------     ROMANEIO DE RETIRADA    ${topoInfo.padStart(55)}\n`;
+    txt += `| REQ.: ${requisitante}`.padEnd(42) + `CONTATO:   ${contato}`.padEnd(20) + `OS:      ${os}`.padEnd(15) + `|\n`;
+    txt += `+------------------------------------------------------------------------------+\n`;
+    txt += `| CLIENTE:     ${cliente}`.padEnd(55) + `PLACA:  ${placa}`.padEnd(22) + `|\n`;
+    txt += `| MODELO: ${modelo.padEnd(68)}|\n`;
+    txt += `+------------------------------------------------------------------------------+\n`;
+    txt += `| --LOCACAO--     --QUANT--  --ITEM--  --DESCRICAO--                --CHECK--  |\n`;
+    txt += `+------------------------------------------------------------------------------+\n`;
+
+    linhas.forEach(linha => {
+        if (linha.querySelector('.estado-vazio')) return;
+        const loc   = (linha.querySelector('.col-locacao')?.innerText.trim() || '').padEnd(16);
+        const qtd   = parseFloat((linha.querySelector('.col-qtd')?.innerText.trim() || '0').replace(',','.')).toFixed(2).replace('.',',').padStart(5);
+        const cod   = (linha.querySelector('.col-codigo')?.innerText.trim() || '').padStart(6);
+        const desc  = linha.querySelector('.col-descricao')?.innerText.trim() || '';
+        const descF = (desc.length > 33 ? desc.substring(0,30)+'...' : desc).padEnd(33);
+        const chk   = linha.querySelector('input[type="checkbox"]')?.checked ? '[X]' : '[ ]';
+        txt += `| ${loc}  ${qtd}  ${cod}      ${descF}  ${chk.padStart(5)} |\n`;
+        txt += `+------------------------------------------------------------------------------+\n`;
+    });
+
+    txt += `| SEPARADOR:                 AUTORIZANTE:                RECEBIDO:             |\n`;
+    txt += `+------------------------------------------------------------------------------+\n`;
+
+    // ── Envia para o banco ───────────────────────────────────
+    const dadosSalvar = {
+        id:            numeroLimpo,
+        nome:          `Romaneio ${numeroLimpo}`,
+        data:          new Date().toLocaleString('pt-BR'),
+        cliente:       cliente,
+        total_itens:   totalItens,
+        conferidos:    conferidos,
+        itens:         itensParaBanco,
+        txt_formatado: txt,
+        status:        conferidos === totalItens && totalItens > 0 ? 'FECHADO' : 'ABERTO'
+    };
+
+    try {
+        const resposta = await fetch('http://localhost:3000/salvar-romaneio', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(dadosSalvar)
+        });
+
+        if (resposta.ok) {
+            alert(`✔ Romaneio ${numeroLimpo} salvo! (${conferidos}/${totalItens} conferidos)`);
+            const btnTxt = document.getElementById('botao-baixar-txt');
+            if (btnTxt) { btnTxt.style.display = 'inline-block'; btnTxt.dataset.id = numeroLimpo; btnTxt.dataset.nome = 'r' + numeroLimpo + '.txt'; }
+        } else {
+            throw new Error('Resposta inválida do servidor');
+        }
+    } catch (err) {
+        alert('❌ Erro ao salvar. Verifique se o servidor está rodando.');
+        console.error(err);
+    }
+}
+async function baixarTxt() {
+    const btn = document.getElementById('botao-baixar-txt');
+    const id = btn.dataset.id;
+    const nomeArquivo = btn.dataset.nome || `r${id}.txt`;
+
+    try {
+        const resposta = await fetch(`http://localhost:3000/romaneio-txt/${id}`);
+        const dados = await resposta.json();
+
+        if (!dados.txt_formatado) {
+            alert('TXT não encontrado. Salve o romaneio primeiro!');
             return;
         }
 
-        // --- COLOQUE O CÓDIGO NOVO AQUI (DAQUI ATÉ O PRÓXIMO COMENTÁRIO) ---
+        const blob = new Blob([dados.txt_formatado], { type: 'text/plain;charset=utf-8' });
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.download = nomeArquivo;
+        link.style.display = 'none';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
 
-        // Preparando os dados para o Banco SQLite
-        const itensParaBanco = [];
-        linhas.forEach(linha => {
-            if (!linha.querySelector('.estado-vazio')) {
-                itensParaBanco.push({
-                    codigo: linha.querySelector('.col-codigo')?.innerText.trim(),
-                    conferido: linha.querySelector('input[type="checkbox"]')?.checked
-                });
-            }
-        });
-
-        const numRommaneio = document.getElementById('cab-num-romaneio')?.innerText.replace(/\D/g, '') || "0";
-
-        const dadosSalvar = {
-            id: numRommaneio,
-            nome: `Romaneio ${numRommaneio}`,
-            data: new Date().toLocaleString('pt-BR'),
-            itens: itensParaBanco,
-            status: conferidos === totalItens ? 'FECHADO' : 'ABERTO'
-        };
-
-        // Envia para o Servidor Node.js
-        try {
-            await fetch('http://localhost:3000/salvar-romaneio', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(dadosSalvar)
-            });
-            console.log("Salvo no SQLite com sucesso!");
-        } catch (err) {
-            console.error("Erro ao salvar no banco local:", err);
-        }
-
-
-        const spanNum = document.getElementById('cab-num-romaneio');
-        const spanData = document.getElementById('cab-data-romaneio');
-
-        // Captura segura dos dados direto das tags strong (evita ler lixo textual)
-        const requisitante = document.querySelector('#cabecalho-corpo .cabecalho-item:nth-child(1) strong')?.innerText || '---';
-        const contato = document.querySelector('#cabecalho-corpo .cabecalho-item:nth-child(2) strong')?.innerText || '---';
-        const os = document.querySelector('#cabecalho-corpo .cabecalho-item:nth-child(3) strong')?.innerText || '---';
-        const placa = document.querySelector('#cabecalho-corpo .cabecalho-item:nth-child(4) strong')?.innerText || '---';
-        const cliente = document.querySelector('#cabecalho-corpo .item-full:nth-of-type(5) strong')?.innerText || '---';
-        const modelo = document.querySelector('#cabecalho-corpo .item-full:nth-of-type(6) strong')?.innerText || '---';
-
-        // LIMPEZA DEFINITIVA DO NOME: Pegamos apenas os dígitos do número do romaneio
-        let nRomaneio = spanNum ? spanNum.innerText : "";
-        let matchNumero = nRomaneio.match(/\d+/); // Pega apenas os números (Ex: 15583)
-        let numeroLimpo = matchNumero ? matchNumero[0] : "";
-
-        // Se por acaso o romaneio não tiver número, tenta usar a OS como quebra-galho no nome
-        if (numeroLimpo === "" && os !== '---') {
-            numeroLimpo = os.trim();
-        }
-
-        let dataDoc = spanData ? spanData.innerText.replace(/Data:/gi, '').trim() : "---";
-
-        // --- MONTAGEM DO ARQUIVO COM ESPAÇAMENTOS PRECISOS ---
-        let textoTXT = `                                                                | REEMISSÃO |\n`;
-
-        // Alinhamento exato do topo do romaneio
-        const topoInfo = `Nº:   ${numeroLimpo} - ${dataDoc} -+`;
-        textoTXT += `+-----------------     ROMANEIO DE RETIRADA    ${topoInfo.padStart(55)}\n`;
-
-        // Linha do Requisitante, Contato e OS
-        const reqStr = `| REQ.: ${requisitante}`.padEnd(42, ' ');
-        const contStr = `CONTATO:   ${contato}`.padEnd(20, ' ');
-        const osStr = `OS:      ${os}`.padEnd(15, ' ');
-        textoTXT += `${reqStr}${contStr}${osStr}|\n`;
-        textoTXT += `+------------------------------------------------------------------------------+\n`;
-
-        // Linha do Cliente e Placa
-        const cliStr = `| CLIENTE:     ${cliente}`.padEnd(55, ' ');
-        const placaStr = `PLACA:  ${placa}`.padEnd(22, ' ');
-        textoTXT += `${cliStr}${placaStr}|\n`;
-
-        // Linha do Modelo
-        textoTXT += `| MODELO: ${modelo.padEnd(68, ' ')}|\n`;
-        textoTXT += `+------------------------------------------------------------------------------+\n`;
-
-        // Linha de Título das Colunas
-        textoTXT += `| --LOCACAO--     --QUANT--  --ITEM--  --DESCRICAO--                --CHECK--  |\n`;
-        textoTXT += `+------------------------------------------------------------------------------+\n`;
-        textoTXT += `                                                                                \n`;
-
-        // Varre as linhas da tabela e monta as grades
-        linhas.forEach(linha => {
-            if (linha.querySelector('.estado-vazio')) return;
-
-            const locacao = linha.querySelector('.col-locacao')?.innerText.trim() || '';
-            const qtd = linha.querySelector('.col-qtd')?.innerText.trim() || '0';
-            const codigo = linha.querySelector('.col-codigo')?.innerText.trim() || '';
-            const descricao = linha.querySelector('.col-descricao')?.innerText.trim() || '';
-
-            const checkbox = linha.querySelector('input[type="checkbox"]');
-            const checkSimbolo = checkbox && checkbox.checked ? "[X]" : "[ ]";
-
-            const locacaoFormatada = locacao.padEnd(16, ' ');
-
-            const qtdValor = parseFloat(qtd.replace(',', '.'));
-            const qtdFormatada = qtdValor.toFixed(2).replace('.', ',').padStart(5, ' ');
-
-            const codigoFormatado = codigo.padStart(6, ' ');
-            const descricaoFormatada = (descricao.length > 33 ? descricao.substring(0, 30) + '...' : descricao).padEnd(33, ' ');
-            const checkFormatado = checkSimbolo.padStart(5, ' ');
-
-            textoTXT += `| ${locacaoFormatada}  ${qtdFormatada}  ${codigoFormatado}      ${descricaoFormatada}  ${checkFormatado} |\n`;
-            textoTXT += `+------------------------------------------------------------------------------+\n`;
-        });
-
-        textoTXT += `| SEPARADOR:                 AUTORIZANTE:                RECEBIDO:             |\n`;
-        textoTXT += `+------------------------------------------------------------------------------+\n`;
-
-        // --- NOVA REGRA DO NOME DO ARQUIVO: EXCLUSIVAMENTE r + NÚMERO ---
-        let nomeArquivo = "r_desconhecido.txt";
-        if (numeroLimpo !== "") {
-            nomeArquivo = `r${numeroLimpo}.txt`; // Gera r15583.txt
-        }
-
-        // Criando o arquivo
-        const blob = new Blob([textoTXT], { type: 'text/plain;charset=utf-8' });
-        const link = document.createElement("a");
-
-        if (link.download !== undefined) {
-            const url = URL.createObjectURL(blob);
-            link.setAttribute("href", url);
-            link.setAttribute("download", nomeArquivo);
-            link.style.visibility = 'hidden';
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-        }
+    } catch (err) {
+        alert('❌ Erro ao baixar TXT. Verifique se o servidor está rodando.');
+        console.error(err);
     }
 }
