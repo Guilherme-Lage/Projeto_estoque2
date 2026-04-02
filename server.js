@@ -90,7 +90,7 @@ const { exec } = require('child_process'); // Importa o comando para rodar progr
 app.get('/executar-python', (req, res) => {
     // AJUSTE AQUI: Coloque o caminho completo onde o seu arquivo .py está salvo
     // Exemplo: 'python "C:/Users/Usuario/Desktop/meu_script.py"'
-    const caminhoPython = 'python "C:\Users\TI\Downloads\monitor_bloco_notas.py"';
+    const caminhoPython = 'python "C:\\Users\\TI\\Downloads\\monitor_bloco_notas.py';
 
     exec(caminhoPython, (error, stdout, stderr) => {
         if (error) {
