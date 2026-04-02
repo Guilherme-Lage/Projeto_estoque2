@@ -17,8 +17,8 @@ const db = new sqlite3.Database(dbPath, (err) => {
 });
 
 db.serialize(() => {
-    db.run("DROP TABLE IF EXISTS produtos"); 
-    
+    db.run("DROP TABLE IF EXISTS produtos");
+
     db.run(`CREATE TABLE IF NOT EXISTS itens_estoque (
         EMPRESA TEXT,
         ITEM_ESTOQUE TEXT,
@@ -43,8 +43,8 @@ db.serialize(() => {
 app.post('/salvar-romaneio', (req, res) => {
     const { id, nome, data, cliente, itens, status } = req.body;
     const sql = `INSERT OR REPLACE INTO romaneios (id, nome, data, cliente, itens_json, status) VALUES (?, ?, ?, ?, ?, ?)`;
-    
-    db.run(sql, [id, nome, data, cliente, JSON.stringify(itens), status], function(err) {
+
+    db.run(sql, [id, nome, data, cliente, JSON.stringify(itens), status], function (err) {
         if (err) return res.status(500).json({ erro: err.message });
         res.json({ mensagem: "Romaneio salvo com sucesso!" });
     });
@@ -84,24 +84,50 @@ app.listen(port, '0.0.0.0', () => {
     console.log(`💻 Local: http://192.168.15.254:${port}`);
     console.log(`📱 Celular: Use o IP do seu PC na porta ${port}`);
 });
-const { exec } = require('child_process'); // Importa o comando para rodar programas externos
+const { exec, spawn } = require('child_process');
+const { execSync } = require('child_process');
 
-// ROTA PARA EXECUTAR O SEU SCRIPT PYTHON
+let monitorProcesso = null;
+
+// Inicia o monitor em background (não bloqueia o servidor)
 app.get('/executar-python', (req, res) => {
-    // AJUSTE AQUI: Coloque o caminho completo onde o seu arquivo .py está salvo
-    // Exemplo: 'python "C:/Users/Usuario/Desktop/meu_script.py"'
-    const caminhoPython = 'python "C:\\Users\\TI\\Downloads\\monitor_bloco_notas.py';
+    if (monitorProcesso && !monitorProcesso.killed) {
+        console.log('⚠️ Monitor já está rodando.');
+        return res.json({ mensagem: 'ja_rodando' });
+    }
 
-    exec(caminhoPython, (error, stdout, stderr) => {
+    const scriptPath = path.resolve(__dirname, 'monitor_bloco_notas.py');
+    monitorProcesso = spawn('python', [scriptPath], { detached: false, shell: true });
+
+    monitorProcesso.on('error', (err) => console.error('❌ Erro ao iniciar monitor:', err));
+    monitorProcesso.on('exit', () => { monitorProcesso = null; });
+
+    console.log(`🚀 Monitor iniciado em background (PID: ${monitorProcesso.pid})`);
+    res.json({ mensagem: 'iniciado' });
+});
+
+// Abre o Bloco de Notas, copia o conteúdo e fecha — usa VBS para ter permissão de janela
+app.get('/copiar-romaneio', (req, res) => {
+    const scriptPath = path.resolve(__dirname, 'copiar_romaneio.py');
+    const tempFile = path.join(require('os').tmpdir(), 'romaneio_copiado.txt');
+    const vbsPath = path.join(require('os').tmpdir(), 'rodar_python.vbs');
+    const fs = require('fs');
+
+    // Cria um .vbs temporário que roda o Python com permissão de janela
+    const vbsConteudo = `Set oShell = CreateObject("WScript.Shell")\noShell.Run "python """ & "${scriptPath.replace(/\\/g, '\\\\')}" & """", 1, True`;
+    fs.writeFileSync(vbsPath, vbsConteudo);
+
+    exec(`cscript //nologo "${vbsPath}"`, { shell: true, timeout: 12000 }, (error) => {
         if (error) {
-            console.error(`Erro ao rodar Python: ${error.message}`);
+            console.error('❌ Erro ao copiar romaneio:', error.message);
             return res.status(500).json({ erro: error.message });
         }
-        if (stderr) {
-            console.error(`Erro no Script: ${stderr}`);
+        try {
+            const conteudo = fs.readFileSync(tempFile, 'utf8');
+            if (!conteudo || conteudo.trim() === '') return res.json({ conteudo: '' });
+            res.json({ conteudo });
+        } catch (e) {
+            res.status(500).json({ erro: 'Arquivo temporário não encontrado.' });
         }
-        
-        console.log("✅ Script Python executado com sucesso!");
-        res.json({ mensagem: "Python finalizado!" });
     });
 });

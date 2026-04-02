@@ -184,7 +184,7 @@ async function filtrarTabela() {
         const textoCodigo = linha.querySelector('.col-codigo')?.innerText.toLowerCase().trim() || '';
         const textoDescricao = linha.querySelector('.col-descricao')?.innerText.toLowerCase() || '';
 
-        // BUSCA PARCIAL: Usa .includes() para você não precisar digitar o código todo
+
         let corresponde = false;
         if (buscaEhNumero) {
             corresponde = textoCodigo.includes(codigoTraduzido);
@@ -196,7 +196,7 @@ async function filtrarTabela() {
     });
 }
 
-document.getElementById('busca-codigo').addEventListener('keypress', async function(e) {
+document.getElementById('busca-codigo').addEventListener('keypress', async function (e) {
     if (e.key === 'Enter') {
         e.preventDefault();
         const termoBusca = this.value.trim();
@@ -204,7 +204,7 @@ document.getElementById('busca-codigo').addEventListener('keypress', async funct
 
         try {
             const resposta = await fetch(`http://localhost:3000/buscar-produto/${termoBusca}`);
-            
+
             if (resposta.ok) {
                 const produto = await resposta.json();
                 const codigoReal = produto.ITEM_ESTOQUE_PUB.toString().trim();
@@ -219,11 +219,11 @@ document.getElementById('busca-codigo').addEventListener('keypress', async funct
                         if (cb) {
                             cb.checked = true;
                             marcarItem(parseInt(cb.id.split('-')[1]), true);
-                            
-                            // --- AQUI RESOLVE O PROBLEMA DA TABELA NÃO VOLTAR ---
-                            this.value = '';        // Limpa o campo
-                            filtrarTabela();        // Chama o filtro vazio para MOSTRAR TUDO
-                            
+
+
+                            this.value = '';
+                            filtrarTabela();
+
                             linha.scrollIntoView({ behavior: 'smooth', block: 'center' });
                             achou = true;
                             break;
@@ -234,12 +234,12 @@ document.getElementById('busca-codigo').addEventListener('keypress', async funct
                 if (!achou) {
                     alert(`Produto [${produto.DES_ITEM_ESTOQUE}] fora do romaneio!`);
                     this.value = '';
-                    filtrarTabela(); // Volta a tabela mesmo no erro
+                    filtrarTabela();
                 }
             } else {
                 alert("Código não cadastrado!");
                 this.value = '';
-                filtrarTabela(); // Volta a tabela mesmo no erro
+                filtrarTabela();
             }
         } catch (err) {
             console.error(err);
@@ -267,7 +267,7 @@ function salvarNoHistorico() {
     // 1. CAPTURA OS ITENS DA TABELA
     const itensAtuais = [];
     const linhas = document.querySelectorAll('#corpo-tabela tr');
-    
+
     linhas.forEach((linha) => {
         if (linha.querySelector('.estado-vazio')) return;
 
@@ -286,7 +286,7 @@ function salvarNoHistorico() {
 
     if (cabecalhoCorpo) {
         const strongs = cabecalhoCorpo.querySelectorAll('strong');
-        
+
         // Pegamos as tags de texto lá do topo do painel azul
         const spansTopo = document.querySelectorAll('.cabecalho-topo span');
         let nRomaneio = "---";
@@ -381,42 +381,49 @@ function atualizarDadosDoHistorico() {
     }
 }
 async function colarDoApollo() {
-    // 1. Salva o que já estiver na tela no histórico antes de limpar
     if (typeof totalItens !== 'undefined' && totalItens > 0) {
         salvarNoHistorico();
     }
 
+    const btn = document.querySelector('button[onclick="colarDoApollo()"]');
+    const textoOriginal = btn.textContent;
+    btn.disabled = true;
+    btn.textContent = 'Aguarde...';
+
     try {
-        // 2. Avisa o Node para rodar o Python (que vai copiar a aba e fechar o Bloco de Notas)
-        // Certifique-se de ter criado a rota '/executar-python' no seu server.js
-        await fetch('http://localhost:3000/executar-python');
+        const resposta = await fetch('http://localhost:3000/copiar-romaneio');
+        const dados = await resposta.json();
 
-        // 3. Pequena pausa (800ms) para dar tempo do Python fazer o Ctrl+C e fechar a aba
-        setTimeout(async () => {
-            try {
-                const texto = await navigator.clipboard.readText();
+        if (!resposta.ok) throw new Error(dados.erro || 'Erro desconhecido');
 
-                if (texto.trim() === "") {
-                    alert("O Python não encontrou texto para copiar ou a área de transferência está vazia!");
-                    return;
-                }
+        if (!dados.conteudo || dados.conteudo.trim() === '') {
+            alert('O Bloco de Notas está vazio!');
+            btn.disabled = false;
+            btn.textContent = textoOriginal;
+            return;
+        }
 
-                // 4. Processa o texto que o Python acabou de "jogar" no Ctrl+C
-                processarTexto(texto);
+        processarTexto(dados.conteudo);
+        document.getElementById('legenda-arquivo').textContent = "Copiado do Bloco de Notas";
 
-                // Feedback visual
-                document.getElementById('legenda-arquivo').textContent = "Importado via Python (Aba Bloco de Notas)";
-                console.log("Romaneio processado automaticamente via script Python.");
+        btn.textContent = '✔ Copiado!';
+        btn.style.background = '#2d7a4a';
+        btn.style.color = '#fff';
+        btn.style.borderColor = '#2d7a4a';
 
-            } catch (clipboardErr) {
-                alert("Erro ao ler área de transferência. Clique na página e tente de novo.");
-            }
-        }, 800); 
+        setTimeout(() => {
+            btn.disabled = false;
+            btn.textContent = textoOriginal;
+            btn.style.background = '';
+            btn.style.color = '';
+            btn.style.borderColor = '';
+        }, 2000);
 
     } catch (err) {
-        // Caso o servidor Node esteja desligado ou a rota não exista
-        alert("Não foi possível acionar o Python. Verifique se o servidor Node está rodando.");
-        console.error("Erro na integração Python:", err);
+        alert('Erro: servidor offline. Rode o server.js primeiro!');
+        btn.disabled = false;
+        btn.textContent = textoOriginal;
+        console.error('Erro ao copiar romaneio:', err);
     }
 }
 
@@ -467,7 +474,7 @@ function carregarDoHistorico(indice) {
     if (romaneioSelecionado.cabecalho && painel) {
         painel.style.display = 'block';
         const cab = romaneioSelecionado.cabecalho;
-        
+
         painel.innerHTML = `
             <div class="cabecalho-topo">
                 <span id="cab-num-romaneio">${cab.nRomaneio}</span>
@@ -544,149 +551,149 @@ function limparTabela() {
 
 
 function salvarTabelaEmArquivo() {
-    
+
     async function salvarTabelaEmArquivo() {
-    const linhas = document.querySelectorAll('#corpo-tabela tr');
-    
-    // 1. VERIFICAÇÃO INICIAL (Já deve existir no seu código)
-    if (linhas.length === 0 || document.querySelector('.estado-vazio')) {
-        alert("Carregue um romaneio primeiro!");
-        return;
-    }
+        const linhas = document.querySelectorAll('#corpo-tabela tr');
 
-    // --- COLOQUE O CÓDIGO NOVO AQUI (DAQUI ATÉ O PRÓXIMO COMENTÁRIO) ---
-    
-    // Preparando os dados para o Banco SQLite
-    const itensParaBanco = [];
-    linhas.forEach(linha => {
-        if (!linha.querySelector('.estado-vazio')) {
-            itensParaBanco.push({
-                codigo: linha.querySelector('.col-codigo')?.innerText.trim(),
-                conferido: linha.querySelector('input[type="checkbox"]')?.checked
-            });
+        // 1. VERIFICAÇÃO INICIAL (Já deve existir no seu código)
+        if (linhas.length === 0 || document.querySelector('.estado-vazio')) {
+            alert("Carregue um romaneio primeiro!");
+            return;
         }
-    });
 
-    const numRommaneio = document.getElementById('cab-num-romaneio')?.innerText.replace(/\D/g, '') || "0";
-    
-    const dadosSalvar = {
-        id: numRommaneio,
-        nome: `Romaneio ${numRommaneio}`,
-        data: new Date().toLocaleString('pt-BR'),
-        itens: itensParaBanco,
-        status: conferidos === totalItens ? 'FECHADO' : 'ABERTO'
-    };
+        // --- COLOQUE O CÓDIGO NOVO AQUI (DAQUI ATÉ O PRÓXIMO COMENTÁRIO) ---
 
-    // Envia para o Servidor Node.js
-    try {
-        await fetch('http://localhost:3000/salvar-romaneio', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(dadosSalvar)
+        // Preparando os dados para o Banco SQLite
+        const itensParaBanco = [];
+        linhas.forEach(linha => {
+            if (!linha.querySelector('.estado-vazio')) {
+                itensParaBanco.push({
+                    codigo: linha.querySelector('.col-codigo')?.innerText.trim(),
+                    conferido: linha.querySelector('input[type="checkbox"]')?.checked
+                });
+            }
         });
-        console.log("Salvo no SQLite com sucesso!");
-    } catch (err) {
-        console.error("Erro ao salvar no banco local:", err);
-    }
+
+        const numRommaneio = document.getElementById('cab-num-romaneio')?.innerText.replace(/\D/g, '') || "0";
+
+        const dadosSalvar = {
+            id: numRommaneio,
+            nome: `Romaneio ${numRommaneio}`,
+            data: new Date().toLocaleString('pt-BR'),
+            itens: itensParaBanco,
+            status: conferidos === totalItens ? 'FECHADO' : 'ABERTO'
+        };
+
+        // Envia para o Servidor Node.js
+        try {
+            await fetch('http://localhost:3000/salvar-romaneio', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(dadosSalvar)
+            });
+            console.log("Salvo no SQLite com sucesso!");
+        } catch (err) {
+            console.error("Erro ao salvar no banco local:", err);
+        }
 
 
-    const spanNum = document.getElementById('cab-num-romaneio');
-    const spanData = document.getElementById('cab-data-romaneio');
-    
-    // Captura segura dos dados direto das tags strong (evita ler lixo textual)
-    const requisitante = document.querySelector('#cabecalho-corpo .cabecalho-item:nth-child(1) strong')?.innerText || '---';
-    const contato = document.querySelector('#cabecalho-corpo .cabecalho-item:nth-child(2) strong')?.innerText || '---';
-    const os = document.querySelector('#cabecalho-corpo .cabecalho-item:nth-child(3) strong')?.innerText || '---';
-    const placa = document.querySelector('#cabecalho-corpo .cabecalho-item:nth-child(4) strong')?.innerText || '---';
-    const cliente = document.querySelector('#cabecalho-corpo .item-full:nth-of-type(5) strong')?.innerText || '---';
-    const modelo = document.querySelector('#cabecalho-corpo .item-full:nth-of-type(6) strong')?.innerText || '---';
+        const spanNum = document.getElementById('cab-num-romaneio');
+        const spanData = document.getElementById('cab-data-romaneio');
 
-    // LIMPEZA DEFINITIVA DO NOME: Pegamos apenas os dígitos do número do romaneio
-    let nRomaneio = spanNum ? spanNum.innerText : "";
-    let matchNumero = nRomaneio.match(/\d+/); // Pega apenas os números (Ex: 15583)
-    let numeroLimpo = matchNumero ? matchNumero[0] : "";
+        // Captura segura dos dados direto das tags strong (evita ler lixo textual)
+        const requisitante = document.querySelector('#cabecalho-corpo .cabecalho-item:nth-child(1) strong')?.innerText || '---';
+        const contato = document.querySelector('#cabecalho-corpo .cabecalho-item:nth-child(2) strong')?.innerText || '---';
+        const os = document.querySelector('#cabecalho-corpo .cabecalho-item:nth-child(3) strong')?.innerText || '---';
+        const placa = document.querySelector('#cabecalho-corpo .cabecalho-item:nth-child(4) strong')?.innerText || '---';
+        const cliente = document.querySelector('#cabecalho-corpo .item-full:nth-of-type(5) strong')?.innerText || '---';
+        const modelo = document.querySelector('#cabecalho-corpo .item-full:nth-of-type(6) strong')?.innerText || '---';
 
-    // Se por acaso o romaneio não tiver número, tenta usar a OS como quebra-galho no nome
-    if (numeroLimpo === "" && os !== '---') {
-        numeroLimpo = os.trim();
-    }
+        // LIMPEZA DEFINITIVA DO NOME: Pegamos apenas os dígitos do número do romaneio
+        let nRomaneio = spanNum ? spanNum.innerText : "";
+        let matchNumero = nRomaneio.match(/\d+/); // Pega apenas os números (Ex: 15583)
+        let numeroLimpo = matchNumero ? matchNumero[0] : "";
 
-    let dataDoc = spanData ? spanData.innerText.replace(/Data:/gi, '').trim() : "---";
+        // Se por acaso o romaneio não tiver número, tenta usar a OS como quebra-galho no nome
+        if (numeroLimpo === "" && os !== '---') {
+            numeroLimpo = os.trim();
+        }
 
-    // --- MONTAGEM DO ARQUIVO COM ESPAÇAMENTOS PRECISOS ---
-    let textoTXT = `                                                                | REEMISSÃO |\n`;
-    
-    // Alinhamento exato do topo do romaneio
-    const topoInfo = `Nº:   ${numeroLimpo} - ${dataDoc} -+`;
-    textoTXT += `+-----------------     ROMANEIO DE RETIRADA    ${topoInfo.padStart(55)}\n`;
-    
-    // Linha do Requisitante, Contato e OS
-    const reqStr = `| REQ.: ${requisitante}`.padEnd(42, ' ');
-    const contStr = `CONTATO:   ${contato}`.padEnd(20, ' ');
-    const osStr = `OS:      ${os}`.padEnd(15, ' ');
-    textoTXT += `${reqStr}${contStr}${osStr}|\n`;
-    textoTXT += `+------------------------------------------------------------------------------+\n`;
-    
-    // Linha do Cliente e Placa
-    const cliStr = `| CLIENTE:     ${cliente}`.padEnd(55, ' ');
-    const placaStr = `PLACA:  ${placa}`.padEnd(22, ' ');
-    textoTXT += `${cliStr}${placaStr}|\n`;
-    
-    // Linha do Modelo
-    textoTXT += `| MODELO: ${modelo.padEnd(68, ' ')}|\n`;
-    textoTXT += `+------------------------------------------------------------------------------+\n`;
-    
-    // Linha de Título das Colunas
-    textoTXT += `| --LOCACAO--     --QUANT--  --ITEM--  --DESCRICAO--                --CHECK--  |\n`;
-    textoTXT += `+------------------------------------------------------------------------------+\n`;
-    textoTXT += `                                                                                \n`;
+        let dataDoc = spanData ? spanData.innerText.replace(/Data:/gi, '').trim() : "---";
 
-    // Varre as linhas da tabela e monta as grades
-    linhas.forEach(linha => {
-        if (linha.querySelector('.estado-vazio')) return;
+        // --- MONTAGEM DO ARQUIVO COM ESPAÇAMENTOS PRECISOS ---
+        let textoTXT = `                                                                | REEMISSÃO |\n`;
 
-        const locacao = linha.querySelector('.col-locacao')?.innerText.trim() || '';
-        const qtd = linha.querySelector('.col-qtd')?.innerText.trim() || '0';
-        const codigo = linha.querySelector('.col-codigo')?.innerText.trim() || '';
-        const descricao = linha.querySelector('.col-descricao')?.innerText.trim() || '';
-        
-        const checkbox = linha.querySelector('input[type="checkbox"]');
-        const checkSimbolo = checkbox && checkbox.checked ? "[X]" : "[ ]";
+        // Alinhamento exato do topo do romaneio
+        const topoInfo = `Nº:   ${numeroLimpo} - ${dataDoc} -+`;
+        textoTXT += `+-----------------     ROMANEIO DE RETIRADA    ${topoInfo.padStart(55)}\n`;
 
-        const locacaoFormatada = locacao.padEnd(16, ' ');
-        
-        const qtdValor = parseFloat(qtd.replace(',', '.'));
-        const qtdFormatada = qtdValor.toFixed(2).replace('.', ',').padStart(5, ' ');
-        
-        const codigoFormatado = codigo.padStart(6, ' ');
-        const descricaoFormatada = (descricao.length > 33 ? descricao.substring(0, 30) + '...' : descricao).padEnd(33, ' ');
-        const checkFormatado = checkSimbolo.padStart(5, ' ');
-
-        textoTXT += `| ${locacaoFormatada}  ${qtdFormatada}  ${codigoFormatado}      ${descricaoFormatada}  ${checkFormatado} |\n`;
+        // Linha do Requisitante, Contato e OS
+        const reqStr = `| REQ.: ${requisitante}`.padEnd(42, ' ');
+        const contStr = `CONTATO:   ${contato}`.padEnd(20, ' ');
+        const osStr = `OS:      ${os}`.padEnd(15, ' ');
+        textoTXT += `${reqStr}${contStr}${osStr}|\n`;
         textoTXT += `+------------------------------------------------------------------------------+\n`;
-    });
 
-    textoTXT += `| SEPARADOR:                 AUTORIZANTE:                RECEBIDO:             |\n`;
-    textoTXT += `+------------------------------------------------------------------------------+\n`;
+        // Linha do Cliente e Placa
+        const cliStr = `| CLIENTE:     ${cliente}`.padEnd(55, ' ');
+        const placaStr = `PLACA:  ${placa}`.padEnd(22, ' ');
+        textoTXT += `${cliStr}${placaStr}|\n`;
 
-    // --- NOVA REGRA DO NOME DO ARQUIVO: EXCLUSIVAMENTE r + NÚMERO ---
-    let nomeArquivo = "r_desconhecido.txt";
-    if (numeroLimpo !== "") {
-        nomeArquivo = `r${numeroLimpo}.txt`; // Gera r15583.txt
-    }
+        // Linha do Modelo
+        textoTXT += `| MODELO: ${modelo.padEnd(68, ' ')}|\n`;
+        textoTXT += `+------------------------------------------------------------------------------+\n`;
 
-    // Criando o arquivo
-    const blob = new Blob([textoTXT], { type: 'text/plain;charset=utf-8' });
-    const link = document.createElement("a");
-    
-    if (link.download !== undefined) {
-        const url = URL.createObjectURL(blob);
-        link.setAttribute("href", url);
-        link.setAttribute("download", nomeArquivo);
-        link.style.visibility = 'hidden';
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
+        // Linha de Título das Colunas
+        textoTXT += `| --LOCACAO--     --QUANT--  --ITEM--  --DESCRICAO--                --CHECK--  |\n`;
+        textoTXT += `+------------------------------------------------------------------------------+\n`;
+        textoTXT += `                                                                                \n`;
+
+        // Varre as linhas da tabela e monta as grades
+        linhas.forEach(linha => {
+            if (linha.querySelector('.estado-vazio')) return;
+
+            const locacao = linha.querySelector('.col-locacao')?.innerText.trim() || '';
+            const qtd = linha.querySelector('.col-qtd')?.innerText.trim() || '0';
+            const codigo = linha.querySelector('.col-codigo')?.innerText.trim() || '';
+            const descricao = linha.querySelector('.col-descricao')?.innerText.trim() || '';
+
+            const checkbox = linha.querySelector('input[type="checkbox"]');
+            const checkSimbolo = checkbox && checkbox.checked ? "[X]" : "[ ]";
+
+            const locacaoFormatada = locacao.padEnd(16, ' ');
+
+            const qtdValor = parseFloat(qtd.replace(',', '.'));
+            const qtdFormatada = qtdValor.toFixed(2).replace('.', ',').padStart(5, ' ');
+
+            const codigoFormatado = codigo.padStart(6, ' ');
+            const descricaoFormatada = (descricao.length > 33 ? descricao.substring(0, 30) + '...' : descricao).padEnd(33, ' ');
+            const checkFormatado = checkSimbolo.padStart(5, ' ');
+
+            textoTXT += `| ${locacaoFormatada}  ${qtdFormatada}  ${codigoFormatado}      ${descricaoFormatada}  ${checkFormatado} |\n`;
+            textoTXT += `+------------------------------------------------------------------------------+\n`;
+        });
+
+        textoTXT += `| SEPARADOR:                 AUTORIZANTE:                RECEBIDO:             |\n`;
+        textoTXT += `+------------------------------------------------------------------------------+\n`;
+
+        // --- NOVA REGRA DO NOME DO ARQUIVO: EXCLUSIVAMENTE r + NÚMERO ---
+        let nomeArquivo = "r_desconhecido.txt";
+        if (numeroLimpo !== "") {
+            nomeArquivo = `r${numeroLimpo}.txt`; // Gera r15583.txt
+        }
+
+        // Criando o arquivo
+        const blob = new Blob([textoTXT], { type: 'text/plain;charset=utf-8' });
+        const link = document.createElement("a");
+
+        if (link.download !== undefined) {
+            const url = URL.createObjectURL(blob);
+            link.setAttribute("href", url);
+            link.setAttribute("download", nomeArquivo);
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
     }
 }
-}   
