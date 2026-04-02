@@ -196,61 +196,56 @@ async function filtrarTabela() {
     });
 }
 
-// document.getElementById('busca-codigo').addEventListener('keypress', async function(e) {
-//     if (e.key === 'Enter') {
-//         e.preventDefault();
-//         const termoBusca = this.value.trim();
-//         if (termoBusca === "") return;
+document.getElementById('busca-codigo').addEventListener('keypress', async function(e) {
+    if (e.key === 'Enter') {
+        e.preventDefault();
+        const termoBusca = this.value.trim();
+        if (termoBusca === "") return;
 
-//         try {
-//             const resposta = await fetch(`http://localhost:3000/buscar-produto/${termoBusca}`);
+        try {
+            const resposta = await fetch(`http://localhost:3000/buscar-produto/${termoBusca}`);
             
-//             if (resposta.ok) {
-//                 const produto = await resposta.json();
-//                 const codigoInterno = produto.ITEM_ESTOQUE_PUB.toString().trim();
-//                 const nomeProduto = produto.DES_ITEM_ESTOQUE || "Produto sem descrição";
+            if (resposta.ok) {
+                const produto = await resposta.json();
+                const codigoReal = produto.ITEM_ESTOQUE_PUB.toString().trim();
 
-//                 let achouNoRomaneio = false;
-//                 const linhas = document.querySelectorAll('#corpo-tabela tr');
+                let achou = false;
+                const linhas = document.querySelectorAll('#corpo-tabela tr');
 
-//                 for (let linha of linhas) {
-//                     const col = linha.querySelector('.col-codigo');
-//                     if (col && col.innerText.trim() === codigoInterno) {
-//                         const cb = linha.querySelector('input[type="checkbox"]');
-//                         if (cb) {
-//                             cb.checked = true;
-//                             marcarItem(parseInt(cb.id.match(/\d+/)), true);
+                for (let linha of linhas) {
+                    const codTabela = linha.querySelector('.col-codigo')?.innerText.trim();
+                    if (codTabela === codigoReal) {
+                        const cb = linha.querySelector('input[type="checkbox"]');
+                        if (cb) {
+                            cb.checked = true;
+                            marcarItem(parseInt(cb.id.split('-')[1]), true);
                             
-//                             this.value = '';
-//                             filtrarTabela(); 
-//                             linha.scrollIntoView({ behavior: 'smooth', block: 'center' });
-//                             achouNoRomaneio = true;
-//                             break;
-//                         }
-//                     }
-//                 }
+                            // --- AQUI RESOLVE O PROBLEMA DA TABELA NÃO VOLTAR ---
+                            this.value = '';        // Limpa o campo
+                            filtrarTabela();        // Chama o filtro vazio para MOSTRAR TUDO
+                            
+                            linha.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                            achou = true;
+                            break;
+                        }
+                    }
+                }
 
-//                 // CASO NÃO ACHE NO ROMANEIO ATUAL
-//                 if (!achouNoRomaneio) {
-//                     // Mostra o nome do item que o banco de dados retornou
-//                     alert(`Produto ENCONTRADO: [${nomeProduto}]\nCód: ${codigoInterno}\n\n⚠️ Mas ele NÃO CONSTA neste romaneio!`);
-//                     this.value = '';
-//                     filtrarTabela();
-//                 }
-
-//             } else {
-//                 alert("Código de barras não cadastrado no banco da Hontec. \n\n ⚠️Favor verificar o cadastro do item escaneado");
-//                 this.value = '';
-//                 filtrarTabela();
-//             }
-//         } catch (err) {
-//             console.error(err);
-//             this.value = '';
-//             filtrarTabela();
-//         }
-//     }
-// });
-
+                if (!achou) {
+                    alert(`Produto [${produto.DES_ITEM_ESTOQUE}] fora do romaneio!`);
+                    this.value = '';
+                    filtrarTabela(); // Volta a tabela mesmo no erro
+                }
+            } else {
+                alert("Código não cadastrado!");
+                this.value = '';
+                filtrarTabela(); // Volta a tabela mesmo no erro
+            }
+        } catch (err) {
+            console.error(err);
+        }
+    }
+});
 
 
 function alternarVisibilidade() {
