@@ -672,4 +672,5 @@ async function baixarTxt() {
         alert('❌ Erro ao baixar TXT. Verifique se o servidor está rodando.');
         console.error(err);
     }
+    
 }
