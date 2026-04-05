@@ -196,41 +196,52 @@ async function filtrarTabela() {
     });
 }
 
-document.getElementById('busca-codigo').addEventListener('keypress', async function (e) {
+document.getElementById('busca-codigo').addEventListener('keydown', async function (e) {
     if (e.key === 'Enter') {
         e.preventDefault();
         const termoBusca = this.value.trim();
         if (termoBusca === "") return;
 
+        const linhas = document.querySelectorAll('#corpo-tabela tr');
+
+        // Função para marcar item e limpar busca
+        const marcarELimpar = (linha) => {
+            const cb = linha.querySelector('input[type="checkbox"]');
+            if (cb) {
+                cb.checked = true;
+                marcarItem(parseInt(cb.id.split('-')[1]), true);
+                this.value = '';
+                document.querySelectorAll('#corpo-tabela tr').forEach(tr => {
+                    if (!tr.querySelector('.estado-vazio')) tr.style.display = '';
+                });
+                setTimeout(() => linha.scrollIntoView({ behavior: 'smooth', block: 'center' }), 100);
+                return true;
+            }
+            return false;
+        };
+
+        // Tentativa 1: busca direta na tabela pelo código digitado
+        for (let linha of linhas) {
+            const codTabela = linha.querySelector('.col-codigo')?.innerText.trim();
+            if (codTabela === termoBusca) {
+                marcarELimpar(linha);
+                return;
+            }
+        }
+
+        // Tentativa 2: busca pelo banco (EAN ou código alternativo)
         try {
             const resposta = await fetch(`http://localhost:3000/buscar-produto/${termoBusca}`);
-
             if (resposta.ok) {
                 const produto = await resposta.json();
                 const codigoReal = produto.ITEM_ESTOQUE_PUB.toString().trim();
-
                 let achou = false;
-                const linhas = document.querySelectorAll('#corpo-tabela tr');
 
                 for (let linha of linhas) {
                     const codTabela = linha.querySelector('.col-codigo')?.innerText.trim();
                     if (codTabela === codigoReal) {
-                        const cb = linha.querySelector('input[type="checkbox"]');
-                        if (cb) {
-                            cb.checked = true;
-                            marcarItem(parseInt(cb.id.split("-")[1]), true);
-
-                            // Limpa a barra e mostra todas as linhas
-                            this.value = "";
-                            document.querySelectorAll("#corpo-tabela tr").forEach(tr => {
-                                if (!tr.querySelector(".estado-vazio")) tr.style.display = "";
-                            });
-
-                            // Scroll suave ate o item marcado
-                            setTimeout(() => linha.scrollIntoView({ behavior: "smooth", block: "center" }), 100);
-                            achou = true;
-                            break;
-                        }
+                        achou = marcarELimpar(linha);
+                        break;
                     }
                 }
 
@@ -240,16 +251,102 @@ document.getElementById('busca-codigo').addEventListener('keypress', async funct
                     filtrarTabela();
                 }
             } else {
-                alert("Código não cadastrado!");
+                alert("Código não encontrado!");
                 this.value = '';
                 filtrarTabela();
             }
         } catch (err) {
-            console.error(err);
+            // Servidor offline — já tentou direto na tabela, não achou
+            alert("Código não encontrado no romaneio!");
+            this.value = '';
+            filtrarTabela();
         }
     }
 });
 
+
+// Detecta mudancas no campo — funciona no celular e no PC
+document.getElementById('busca-codigo').addEventListener('input', function () {
+    const valor = this.value.trim();
+
+    // Campo vazio: mostra tabela toda
+    if (valor === '') {
+        document.querySelectorAll('#corpo-tabela tr').forEach(tr => {
+            if (!tr.querySelector('.estado-vazio')) {
+                tr.style.display = (mostrarApenasPendentes && tr.classList.contains('linha-conferida')) ? 'none' : '';
+            }
+        });
+        return;
+    }
+
+    // QR code no celular preenche o campo de uma vez — detecta pelo tamanho
+    // Codigos EAN tem 8, 12 ou 13 digitos
+    const ehEAN = /^\d{8,}$/.test(valor);
+    if (ehEAN) {
+        dispararBusca(this, valor);
+    }
+});
+
+// Função centralizada de busca — usada pelo Enter e pelo input do celular
+async function dispararBusca(input, termoBusca) {
+    const linhas = document.querySelectorAll('#corpo-tabela tr');
+
+    const marcarELimpar = (linha) => {
+        const cb = linha.querySelector('input[type="checkbox"]');
+        if (cb) {
+            cb.checked = true;
+            marcarItem(parseInt(cb.id.split('-')[1]), true);
+            input.value = '';
+            document.querySelectorAll('#corpo-tabela tr').forEach(tr => {
+                if (!tr.querySelector('.estado-vazio')) tr.style.display = '';
+            });
+            setTimeout(() => linha.scrollIntoView({ behavior: 'smooth', block: 'center' }), 100);
+            return true;
+        }
+        return false;
+    };
+
+    // Tentativa 1: busca direta na tabela
+    for (let linha of linhas) {
+        const codTabela = linha.querySelector('.col-codigo')?.innerText.trim();
+        if (codTabela === termoBusca) {
+            marcarELimpar(linha);
+            return;
+        }
+    }
+
+    // Tentativa 2: busca pelo banco (EAN)
+    try {
+        const resposta = await fetch(`http://localhost:3000/buscar-produto/${termoBusca}`);
+        if (resposta.ok) {
+            const produto = await resposta.json();
+            const codigoReal = produto.ITEM_ESTOQUE_PUB.toString().trim();
+            let achou = false;
+
+            for (let linha of linhas) {
+                const codTabela = linha.querySelector('.col-codigo')?.innerText.trim();
+                if (codTabela === codigoReal) {
+                    achou = marcarELimpar(linha);
+                    break;
+                }
+            }
+
+            if (!achou) {
+                alert(`Produto [${produto.DES_ITEM_ESTOQUE}] fora do romaneio!`);
+                input.value = '';
+                filtrarTabela();
+            }
+        } else {
+            alert('Código não encontrado!');
+            input.value = '';
+            filtrarTabela();
+        }
+    } catch (err) {
+        alert('Código não encontrado no romaneio!');
+        input.value = '';
+        filtrarTabela();
+    }
+}
 
 function alternarVisibilidade() {
     mostrarApenasPendentes = !mostrarApenasPendentes;
