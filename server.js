@@ -107,11 +107,18 @@ app.get("/romaneios", (req, res) => {
 // 5b. Buscar txt de romaneio especifico
 app.get("/romaneio-txt/:id", (req, res) => {
     db.get("SELECT txt_formatado FROM romaneios WHERE id = ?", [req.params.id], (err, row) => {
-        if (err) return res.status(500).json({ erro: err.message });
-        if (!row) return res.status(404).json({ mensagem: "Nao encontrado" });
-        res.json({ txt_formatado: row.txt_formatado });
+        if (err) return res.status(500).send(err.message);
+        if (!row) return res.status(404).send("Não encontrado");
+
+        // 1. Define que o conteúdo é TEXTO PURO (não JSON)
+        // 2. Define o Charset UTF-8 para não bugar acentos
+        res.setHeader('Content-Type', 'text/plain; charset=utf-8');
+
+        // 3. Envia APENAS a string formatada, sem as chaves do JSON
+        res.send(row.txt_formatado);
     });
 });
+
 
 // 6. Inicia o monitor do Bloco de Notas em background
 let monitorProcesso = null;

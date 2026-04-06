@@ -723,8 +723,7 @@ async function salvarTabelaEmArquivo() {
     });
 
 
-    txt += `\n
-    | SEPARADOR:                 AUTORIZANTE:                RECEBIDO:             | \n`;
+    txt += `\n| SEPARADOR:                 AUTORIZANTE:                RECEBIDO:             | \n`;
     txt += `+------------------------------------------------------------------------------+ \n`;
 
     const dadosSalvar = {
@@ -763,6 +762,7 @@ async function salvarTabelaEmArquivo() {
         alert('❌ Erro ao salvar. Verifique se o servidor está rodando na porta 3000.');
         console.error(err);
     }
+
 
 }
 

@@ -16,4 +16,14 @@ db.all("SELECT id, nome, data, cliente, total_itens, conferidos, status FROM rom
     db.close();
 });
 
+// DELETA OS ULTIMOS 5 ITEMS DA TABELA ROMANEIO
+
+// db.all("DELETE FROM romaneios WHERE id IN (SELECT id FROM romaneios ORDER BY id DESC LIMIT 5);", [], (err, rows) => {
+//     console.log("\n Romaneios salvos:");
+//     console.table(rows);
+//     db.close();
+// });
+
+// ENDERECO DO SITE DA TABELA SALVA FORMATADA
+
 //http://localhost:3000/romaneio-txt/15404
