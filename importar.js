@@ -5,7 +5,6 @@ const sqlite3 = require('sqlite3').verbose();
 const db = new sqlite3.Database('./oficina.db');
 
 db.serialize(() => {
-    // 1. Limpa a tabela para recomeçar
     db.run("DELETE FROM itens_estoque");
 
     const insert = db.prepare(`INSERT OR REPLACE INTO itens_estoque 
@@ -17,8 +16,8 @@ db.serialize(() => {
     fs.createReadStream('itens.csv')
         .pipe(csv({ 
             separator: '|',
-            quote: '"', // Trata aspas duplas se houver
-            mapHeaders: ({ header }) => header.replace(/"/g, '').trim() // LIMPA ASPAS DOS NOMES DAS COLUNAS
+            quote: '"',
+            mapHeaders: ({ header }) => header.replace(/"/g, '').trim() 
         }))
         .on('data', (row) => {
             // Pegamos os dados limpando as aspas dos valores também

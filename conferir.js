@@ -16,4 +16,4 @@ db.all("SELECT id, nome, data, cliente, total_itens, conferidos, status FROM rom
     db.close();
 });
 
-
+//http://localhost:3000/romaneio-txt/15404

@@ -74,12 +74,16 @@ app.get('/produtos', (req, res) => {
 // 3. Buscar produto por Código ou EAN
 app.get('/buscar-produto/:termo', (req, res) => {
     const termo = req.params.termo;
+    // Buscamos TODOS os matches possíveis no banco
     const sql = `SELECT * FROM itens_estoque WHERE ITEM_ESTOQUE_PUB = ? OR COD_EAN_GTIN = ?`;
 
-    db.get(sql, [termo, termo], (err, row) => {
+    db.all(sql, [termo, termo], (err, rows) => {
         if (err) return res.status(500).json({ erro: err.message });
-        if (row) res.json(row);
-        else res.status(404).json({ mensagem: "Produto não encontrado" });
+        if (rows && rows.length > 0) {
+            res.json(rows); // Agora enviamos uma LISTA de produtos
+        } else {
+            res.status(404).json({ mensagem: "Produto não encontrado" });
+        }
     });
 });
 
