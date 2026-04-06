@@ -133,16 +133,18 @@ function processarTexto(texto) {
     // ... final da sua função processarTexto atual ...
 
     // Cria o objeto com os dados que acabamos de ler do arquivo
-    const dadosParaSincronizar = {
-        id: nRomaneio,
-        nome: `Romaneio ${nRomaneio}`,
-        data: dataHora,
-        cliente: cliente,
-        total_itens: totalItens,
-        conferidos: 0,
-        itens: itens, // A lista de peças que o Regex pegou
-        status: 'ABERTO'
-    };
+  const dadosParaSincronizar = {
+    id: nRomaneio,
+    nome: `Romaneio ${nRomaneio}`,
+    data: dataHora,
+    cliente: cliente,
+    total_itens: totalItens,
+    itens: itens,
+    // O celular precisa destas linhas abaixo para montar o formulário:
+    cabecalho: {
+        nRomaneio, dataHora, requisitante, contato, os, placa, cliente, modelo
+    }
+};
 
     // Manda para o servidor na mesma hora (sem esperar o clique no botão Salvar)
     fetch(`${window.location.origin}/definir-ativo`, {
@@ -854,14 +856,14 @@ async function sincronizarComBanco(id) {
         const romaneio = await resposta.json();
 
         if (romaneio && romaneio.itens_json) {
-            // Se o banco tiver o cabeçalho completo, usamos ele. 
-            // Se não tiver, tentamos montar com o que sobrou.
-            const cabecalhoCompleto = romaneio.cabecalho_json ? 
+            // Puxa o cabeçalho que o PC salvou no banco. 
+            // Se o banco não tiver o cabecalho_json, ele tenta usar os campos avulsos.
+            const cabecalhoReal = romaneio.cabecalho_json ? 
                 JSON.parse(romaneio.cabecalho_json) : 
                 {
                     nRomaneio: id,
                     dataHora: romaneio.data,
-                    requisitante: "Sincronizado",
+                    requisitante: "---", // REMOVIDO O "SINCRONIZADO" FIXO
                     contato: "---",
                     os: "---",
                     placa: "---",
@@ -873,9 +875,9 @@ async function sincronizarComBanco(id) {
                 nome: `Romaneio ${id}`,
                 data: romaneio.data,
                 total: romaneio.total_itens,
-                concluidos: romaneio.conferidos || 0,
+                concluidos: 0,
                 produtos: JSON.parse(romaneio.itens_json),
-                cabecalho: cabecalhoCompleto // Aqui entra a mágica
+                cabecalho: cabecalhoReal 
             };
 
             let historicoLocal = JSON.parse(localStorage.getItem('historico_hontec') || '[]');
@@ -883,10 +885,10 @@ async function sincronizarComBanco(id) {
             historicoLocal.unshift(registroParaHistorico);
             localStorage.setItem('historico_hontec', JSON.stringify(historicoLocal.slice(0, 8)));
 
-            // Agora sim o carregarDoHistorico vai ter tudo que precisa
+            // Desenha a tela com os dados REAIS do banco
             carregarDoHistorico(0);
         }
     } catch (err) {
-        console.error("Erro ao montar cabeçalho no celular:", err);
+        console.error("Erro na sincronização:", err);
     }
 }
