@@ -11,6 +11,7 @@ const port = 3000;
 
 app.use(cors());
 app.use(express.json({ limit: '50mb' }));
+app.use(express.static(path.resolve(__dirname))); 
 
 // --- BANCO DE DADOS ---
 const dbPath = path.resolve(__dirname, 'oficina.db');
@@ -160,6 +161,30 @@ app.get('/copiar-romaneio', (req, res) => {
         } catch (e) {
             res.status(500).json({ erro: 'Arquivo temporário não encontrado.' });
         }
+    });
+});
+let romaneioAtivo = null;
+
+// 2. A rota que o CELULAR chama (O que deu erro 404)
+app.get('/obter-ativo', (req, res) => {
+    res.json({ id: romaneioAtivo });
+});
+
+// 3. A rota que o PC chama para avisar que abriu um romaneio
+app.post('/definir-ativo', (req, res) => {
+    const { id, nome, data, cliente, total_itens, itens } = req.body;
+    
+    // Atualiza a variável para o celular saber qual é o novo ID
+    romaneioAtivo = id;
+
+    // Salva no banco para o celular conseguir baixar os itens depois
+    const sql = `INSERT OR REPLACE INTO romaneios 
+        (id, nome, data, cliente, total_itens, conferidos, itens_json, status) 
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)`;
+
+    db.run(sql, [id, nome, data, cliente, total_itens, 0, JSON.stringify(itens), 'ABERTO'], (err) => {
+        if (err) return res.status(500).json({ erro: err.message });
+        res.json({ mensagem: "Sincronizado!", id: romaneioAtivo });
     });
 });
 

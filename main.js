@@ -130,7 +130,29 @@ function processarTexto(texto) {
     `;
         corpoTabela.appendChild(tr);
     });
+    // ... final da sua função processarTexto atual ...
+
+    // Cria o objeto com os dados que acabamos de ler do arquivo
+    const dadosParaSincronizar = {
+        id: nRomaneio,
+        nome: `Romaneio ${nRomaneio}`,
+        data: dataHora,
+        cliente: cliente,
+        total_itens: totalItens,
+        conferidos: 0,
+        itens: itens, // A lista de peças que o Regex pegou
+        status: 'ABERTO'
+    };
+
+    // Manda para o servidor na mesma hora (sem esperar o clique no botão Salvar)
+    fetch(`${window.location.origin}/definir-ativo`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(dadosParaSincronizar)
+    }).then(() => console.log("Sincronizado com o celular!"));
 }
+
+
 
 function marcarItem(idx, checado) {
     const linha = document.getElementById(`linha-${idx}`);
@@ -536,7 +558,7 @@ function atualizarContador() {
     // Lógica de 3 cores para o fundo da barra
     if (conferidos === 0) {
         elementoContador.style.background = "#fff0f0";
-        elementoContador.style.color = "#CC0000";      
+        elementoContador.style.color = "#CC0000";
         elementoContador.style.borderColor = "#CC0000";
     } else if (conferidos === totalItens && totalItens > 0) {
         elementoContador.style.background = "#edf7f0"; // Fundo Verde claro
@@ -651,7 +673,7 @@ function limparTabela() {
 
 
 async function salvarTabelaEmArquivo() {
-      salvarNoHistorico(); 
+    salvarNoHistorico();
 
     const linhas = document.querySelectorAll('#corpo-tabela tr');
 
@@ -682,11 +704,11 @@ async function salvarTabelaEmArquivo() {
 
     const spansTopo = document.querySelectorAll('.cabecalho-topo span');
     const strongs = document.querySelectorAll('#cabecalho-corpo strong');
-    
+
     const textoRom = spansTopo[0]?.innerText || '';
     const nRomaneio = textoRom.replace(/Romaneio\s*Nº\s*:/i, '').trim() || '0';
     const dataRom = spansTopo[1]?.innerText.replace(/Data\s*:/i, '').trim() || '---';
-    
+
     const requisitante = strongs[0]?.innerText || '---';
     const contato = strongs[1]?.innerText || '---';
     const os = strongs[2]?.innerText || '---';
@@ -709,7 +731,7 @@ async function salvarTabelaEmArquivo() {
 
     linhas.forEach(linha => {
         if (linha.querySelector('.estado-vazio')) return;
-        
+
         const loc = (linha.querySelector('.col-locacao')?.innerText.trim() || '').padEnd(16);
         const qtdRaw = (linha.querySelector('.col-qtd')?.innerText.trim() || '0').replace(',', '.');
         const qtd = parseFloat(qtdRaw).toFixed(2).replace('.', ',').padStart(5);
@@ -717,7 +739,7 @@ async function salvarTabelaEmArquivo() {
         const desc = linha.querySelector('.col-descricao')?.innerText.trim() || '';
         const descF = (desc.length > 33 ? desc.substring(0, 30) + '...' : desc).padEnd(33);
         const chk = linha.querySelector('input[type="checkbox"]')?.checked ? '[X]' : '[ ]';
-        
+
         txt += `| ${loc}  ${qtd}  ${cod}      ${descF}  ${chk.padStart(5)} |\n`;
         txt += `+------------------------------------------------------------------------------+\n`;
     });
@@ -747,7 +769,7 @@ async function salvarTabelaEmArquivo() {
 
         if (resposta.ok) {
             alert(`✔ Romaneio ${numeroLimpo} salvo! (${conferidos}/${totalItens} conferidos)`);
-            
+
             // Ativa o botão de download se ele existir
             const btnTxt = document.getElementById('botao-baixar-txt');
             if (btnTxt) {
@@ -767,7 +789,7 @@ async function salvarTabelaEmArquivo() {
 }
 
 async function baixarTxt() {
-      
+
     const btn = document.getElementById('botao-baixar-txt');
     const id = btn.dataset.id;
     const nomeArquivo = btn.dataset.nome || `r${id}.txt`;
@@ -797,9 +819,74 @@ async function baixarTxt() {
 }
 function abrirHistoricoRapido() {
     const num = prompt("Digite o número do Romaneio (ex: 15404):");
-    
+
     if (num && num.trim() !== "") {
-        const numeroLimpo = num.replace(/\D/g, ''); 
+        const numeroLimpo = num.replace(/\D/g, '');
         window.open(`http://localhost:3000/romaneio-txt/${numeroLimpo}`, '_blank');
+    }
+}
+
+let ultimoIdSincronizado = null;
+
+// Só roda no celular (telas menores que 800px)
+if (window.innerWidth < 800) {
+    setInterval(async () => {
+        try {
+            // Busca qual romaneio o PC avisou que abriu
+            const res = await fetch(`${window.location.origin}/obter-ativo`);
+            const dados = await res.json();
+
+            // Se o ID for válido e diferente do que já está na tela
+            if (dados.id && dados.id !== "---" && dados.id !== ultimoIdSincronizado) {
+                console.log("Novo romaneio detectado: " + dados.id);
+                ultimoIdSincronizado = dados.id;
+                sincronizarComBanco(dados.id);
+            }
+        } catch (e) {
+            console.log("Servidor não responde...");
+        }
+    }, 2000); // Checa a cada 2 segundos
+}
+
+async function sincronizarComBanco(id) {
+    try {
+        const resposta = await fetch(`${window.location.origin}/romaneio/${id}`);
+        const romaneio = await resposta.json();
+
+        if (romaneio && romaneio.itens_json) {
+            // Se o banco tiver o cabeçalho completo, usamos ele. 
+            // Se não tiver, tentamos montar com o que sobrou.
+            const cabecalhoCompleto = romaneio.cabecalho_json ? 
+                JSON.parse(romaneio.cabecalho_json) : 
+                {
+                    nRomaneio: id,
+                    dataHora: romaneio.data,
+                    requisitante: "Sincronizado",
+                    contato: "---",
+                    os: "---",
+                    placa: "---",
+                    cliente: romaneio.cliente || "---",
+                    modelo: "---"
+                };
+
+            const registroParaHistorico = {
+                nome: `Romaneio ${id}`,
+                data: romaneio.data,
+                total: romaneio.total_itens,
+                concluidos: romaneio.conferidos || 0,
+                produtos: JSON.parse(romaneio.itens_json),
+                cabecalho: cabecalhoCompleto // Aqui entra a mágica
+            };
+
+            let historicoLocal = JSON.parse(localStorage.getItem('historico_hontec') || '[]');
+            historicoLocal = historicoLocal.filter(h => (h.cabecalho?.nRomaneio || h.id) !== id);
+            historicoLocal.unshift(registroParaHistorico);
+            localStorage.setItem('historico_hontec', JSON.stringify(historicoLocal.slice(0, 8)));
+
+            // Agora sim o carregarDoHistorico vai ter tudo que precisa
+            carregarDoHistorico(0);
+        }
+    } catch (err) {
+        console.error("Erro ao montar cabeçalho no celular:", err);
     }
 }
