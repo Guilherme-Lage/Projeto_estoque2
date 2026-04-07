@@ -33,15 +33,15 @@ db.serialize(() => {
         })
         .on('end', () => {
             insert.finalize();
-            console.log('✅ Importação finalizada!');
+            console.log('Importação finalizada!');
             
             // CONFERÊNCIA AUTOMÁTICA
             db.get("SELECT COUNT(*) as total FROM itens_estoque", (err, row) => {
-                console.log(`📊 Total de itens no banco agora: ${row.total}`);
+                console.log(`Total de itens no banco agora: ${row.total}`);
                 db.close();
             });
         })
         .on('error', (err) => {
-            console.error("❌ Erro no arquivo:", err.message);
+            console.error(" Erro no arquivo:", err.message);
         });
 });

@@ -8,6 +8,7 @@
     <link rel="stylesheet" href="style.css">
     <script src="main.js" defer></script>
 </head>
+
 <body>
 
     <div class="container">
@@ -25,31 +26,31 @@
             <button id="botao-limpar" class="botao-padrao botao-perigo" onclick="limparTabela()"
                 style="display:none;">Novo Romaneio</button>
 
-            <button id="botao-historico" class="botao-padrao" onclick="mostrarHistorico()"> Histórico</button>
-            <span class="legenda-upload" id="legenda-arquivo">Insira o .txt do Apollo</span>
-
+            <button id="botao-historico" class="botao-padrao" onclick="mostrarHistorico()"> Histórico</button> 
+            
+            </button>
 
             <input type="file" id="entrada-arquivo" accept=".txt,.html" onchange="carregarArquivo(this)">
+            <span class="legenda-upload" id="legenda-arquivo">Insira o .txt do Apollo</span>
+<button id="btn-ocultar" class="botao-padrao" onclick="alternarVisibilidade()">
+                Ocultar Conferidos
         </div>
 
 
         <div class="info-romaneio" id="info-romaneio"></div>
 
+
+
+        <div id="painel-cabecalho" class="painel-cabecalho">
+            <!-- O JS vai preencher aqui -->
+        </div>
         <div class="linha-upload" style="flex-wrap: wrap;">
             <input type="text" id="busca-codigo" placeholder="Digite o código ou peça..." onkeyup="filtrarTabela()"
                 class="botao-padrao" style="flex: 1; text-align: left;">
 
-            <button id="btn-ocultar" class="botao-padrao" onclick="alternarVisibilidade()">
-                Ocultar Conferidos
-            </button>
+            
 
-            <div class="secao-contador" id="secao-contador">
-                <span id="contagem-conferidos">0</span> de <span id="contagem-total">0</span> itens conferidos
-            </div>
 
-            <div id="painel-cabecalho" class="painel-cabecalho">
-                <!-- O JS vai preencher aqui -->
-            </div>
             <div class="envoltório-tabela">
                 <table>
                     <thead>
@@ -58,7 +59,7 @@
                             <th>Qtd</th>
                             <th>Código</th>
                             <th>Descrição</th>
-                            <th>OK</th>
+                            <th>STATUS</th>
                         </tr>
                     </thead>
                     <tbody id="corpo-tabela">
@@ -67,14 +68,19 @@
                                 <p>Nenhum arquivo carregado</p>
                             </td>
                         </tr>
+
                     </tbody>
                 </table>
             </div>
         </div>
-<button id="botao-salvar" class="botao-padrao" onclick="salvarTabelaEmArquivo()"> Salvar Arquivo</button>
-<button class="botao-padrao" onclick="abrirHistoricoRapido()">Buscar por Nº</button>
+        <div class="secao-contador" id="secao-contador">
+            <span id="contagem-conferidos">0</span> / <span id="contagem-total">0</span> itens conferidos
+        </div>
+        <button id="botao-salvar" class="botao-padrao" onclick="salvarTabelaEmArquivo()"> Salvar Arquivo</button>
+        <button class="botao-padrao" onclick="abrirHistoricoRapido()">Buscar por Nº</button>
 
-<button id="botao-baixar-txt" class="botao-padrao" onclick="baixarTxt()" style="display:none;">⬇ Baixar TXT</button>
+        <button id="botao-baixar-txt" class="botao-padrao" onclick="baixarTxt()" style="display:none;">⬇ Baixar
+            TXT</button>
         <div id="secao-historico"
             style="display:none; background:#fff; border:2px solid #2980b9; border-radius:8px; padding:15px; margin-bottom:20px;">
             <h3 style="font-family:'IBM Plex Mono'; font-size:12px; margin-bottom:10px; color:#2980b9;">📋 ÚLTIMOS

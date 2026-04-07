@@ -27,47 +27,35 @@ function processarTexto(texto) {
     const linhas = texto.split('\n');
 
     // Captura robusta usando Regex
-    const nRomaneio = texto.match(/Nº:\s+(\d+)/)?.[1] || "---";
-    const dataHora = texto.match(/(\d{2}\/\d{2}\/\d{4}\s\d{2}:\d{2})/)?.[1] || "---";
-    const requisitante = texto.match(/REQ\.:\s+(.*?)\s+CONTATO/)?.[1]?.trim() || "---";
-    const contato = texto.match(/CONTATO:\s+(\d+)/)?.[1] || "---";
-    const os = texto.match(/OS:\s*(\d*)/)?.[1] || "---";
-    const cliente = texto.match(/CLIENTE:\s+(\d+\s+.*?)\s+PLACA/)?.[1]?.trim() || "---";
-    const placa = texto.match(/PLACA:\s*(.*?)\s*\|/)?.[1]?.trim() || "---";
-    const modelo = texto.match(/MODELO:\s*(.*?)\s*\|/)?.[1]?.trim() || "---";
+    const nRomaneio = texto.match(/N[º°\.]?\s*[:\.]?\s*(\d+)/i)?.[1] || "---";
+    const dataHora = texto.match(/(\d{2}\/\d{2}\/\d{4}\s*\d{2}:\d{2})/)?.[1] || "---";
+    const requisitante = texto.match(/REQ\.?[:\.]?\s*(.*?)\s*CONTATO/i)?.[1]?.trim() || "---";
+    const contato = texto.match(/CONTATO\s*[:\.]?\s*(\d+)/i)?.[1] || "---";
+    const os = texto.match(/OS\s*[:\.]?\s*(\d*)/i)?.[1] || "---";
+    const cliente = texto.match(/CLIENTE\s*[:\.]?\s*(.*?)\s*PLACA/i)?.[1]?.trim() || "---";
+    const placa = texto.match(/PLACA\s*[:\.]?\s*(.*?)(?=\s*\||\n|$)/i)?.[1]?.trim() || "---";
+    const modelo = texto.match(/MODELO\s*[:\.]?\s*(.*?)(?=\s*\||\n|$)/i)?.[1]?.trim() || "---";
 
     const painel = document.getElementById('painel-cabecalho');
-    painel.style.display = 'block';
-
-    // Montando o HTML com todos os dados
-    painel.innerHTML = `
-        <div class="cabecalho-topo">
-            <span>Romaneio Nº: ${nRomaneio}</span>
-            <span>Data: ${dataHora}</span>
-        </div>
-        <div class="cabecalho-corpo" id="cabecalho-corpo">
-            <div class="cabecalho-item"><span>REQ:</span> <strong>${requisitante}</strong></div>
-            <div class="cabecalho-item"><span>CONTATO:</span> <strong>${contato}</strong></div>
-            <div class="cabecalho-item"><span>OS:</span> <strong>${os}</strong></div>
-            <div class="cabecalho-item"><span>PLACA:</span> <strong>${placa}</strong></div>
-            <div class="cabecalho-item item-full"><span>CLIENTE:</span> <strong>${cliente}</strong></div>
-            <div class="cabecalho-item item-full"><span>MODELO:</span> <strong>${modelo}</strong></div>
-        </div>
-    `;
-
-
-    const itens = [];
-
-    let infoRomaneio = '';
-    for (let linha of linhas) {
-        if (linha.includes('ROMANEIO DE RETIRADA')) {
-            const match = linha.match(/N[^\d]*(\d+).*?(\d{2}\/\d{2}\/\d{4})/);
-            if (match) infoRomaneio = `Romaneio N°: ${match[1]}  |  Data: ${match[2]}`;
-            break;
-        }
+    if (painel) {
+        painel.style.display = 'block';
+        painel.innerHTML = `
+            <div class="cabecalho-topo">
+                <span id="cab-num-romaneio">Romaneio Nº: ${nRomaneio}</span>
+                <span id="cab-data-romaneio">Data: ${dataHora}</span>
+            </div>
+            <div class="cabecalho-corpo" id="cabecalho-corpo">
+                <div class="cabecalho-item"><span>REQ:</span> <strong>${requisitante}</strong></div>
+                <div class="cabecalho-item"><span>CONTATO:</span> <strong>${contato}</strong></div>
+                <div class="cabecalho-item"><span>OS:</span> <strong>${os}</strong></div>
+                <div class="cabecalho-item"><span>PLACA:</span> <strong>${placa}</strong></div>
+                <div class="cabecalho-item item-full"><span>CLIENTE:</span> <strong>${cliente}</strong></div>
+                <div class="cabecalho-item item-full"><span>MODELO:</span> <strong>${modelo}</strong></div>
+            </div>
+        `;
     }
 
-
+    const itens = [];
     const regex = /\|\s+([\d.A-Za-z]+)\s+([\d,]+)\s+(\d+)\s+(.*?)\s*\|/;
 
     for (let linha of linhas) {
@@ -78,95 +66,123 @@ function processarTexto(texto) {
             const codigo = match[3].trim();
             const descricao = match[4].trim();
 
-
             if (locacao === 'LOCACAO' || locacao === '--LOCACAO--') continue;
-
             itens.push({ locacao, qtd, codigo, descricao });
         }
     }
 
     const corpoTabela = document.getElementById('corpo-tabela');
-
     if (itens.length === 0) {
-        corpoTabela.innerHTML = `
-      <tr><td colspan="5" class="estado-vazio"><p>Nenhum item encontrado no arquivo</p></td></tr>
-    `;
+        corpoTabela.innerHTML = `<tr><td colspan="5" class="estado-vazio"><p>Nenhum item encontrado no arquivo</p></td></tr>`;
         return;
     }
 
     totalItens = itens.length;
-    conferidos = 0;
-
-    if (infoRomaneio) {
-        const elementoInfo = document.getElementById('info-romaneio');
-        elementoInfo.style.display = 'block';
-        elementoInfo.textContent = infoRomaneio;
-    }
-
+    
     document.getElementById('secao-contador').style.display = 'block';
     document.getElementById('botao-limpar').style.display = 'inline-block';
-    atualizarContador();
-
+    document.getElementById('info-romaneio').style.display = 'block';
+    document.getElementById('info-romaneio').textContent = `Romaneio N°: ${nRomaneio} | Itens: ${totalItens}`;
 
     corpoTabela.innerHTML = '';
 
     itens.forEach((item, idx) => {
         const tr = document.createElement('tr');
         tr.id = `linha-${idx}`;
+        const valorQtdTotal = parseInt(item.qtd);
+        const classeDestaque = valorQtdTotal > 1 ? 'qtd-multipla' : '';
 
-        const valorQtd = parseFloat(item.qtd);
-        const classeDestaque = valorQtd > 1 ? 'qtd-multipla' : '';
+        // Torna a LINHA INTEIRA clicável
+        tr.setAttribute('onclick', `incrementarItem(${idx}, ${valorQtdTotal})`);
+        tr.style.cursor = 'pointer';
 
         tr.innerHTML = `
-      <td class="col-locacao">${item.locacao}</td>
-      <td class="col-qtd"><span class="${classeDestaque}">${valorQtd.toFixed(0)}</span></td>
-      <td class="col-codigo">${item.codigo}</td>
-      <td class="col-descricao">${item.descricao}</td>
-      <td class="col-check">
-        <div class="caixa-selecao">
-          <input type="checkbox" id="chk-${idx}" onchange="marcarItem(${idx}, this.checked)">
-        </div>
-      </td>
-    `;
+            <td class="col-locacao">${item.locacao}</td>
+            <td class="col-qtd">
+                <span class="${classeDestaque}">
+                    <span id="cont-item-${idx}" data-atual="0">0</span> / ${valorQtdTotal}
+                </span>
+            </td>
+            <td class="col-codigo">${item.codigo}</td>
+            <td class="col-descricao">${item.descricao}</td>
+            <td class="col-check" style="text-align: center;">
+                <div id="status-quadrado-${idx}" class="quadrado-status status-vazio"></div>
+                <input type="checkbox" id="chk-${idx}" style="display:none">
+            </td>
+        `;
         corpoTabela.appendChild(tr);
     });
-    // ... final da sua função processarTexto atual ...
 
-    // Cria o objeto com os dados que acabamos de ler do arquivo
-  const dadosParaSincronizar = {
-    id: nRomaneio,
-    nome: `Romaneio ${nRomaneio}`,
-    data: dataHora,
-    cliente: cliente,
-    total_itens: totalItens,
-    itens: itens,
-    // O celular precisa destas linhas abaixo para montar o formulário:
-    cabecalho: {
-        nRomaneio, dataHora, requisitante, contato, os, placa, cliente, modelo
-    }
-};
+    // Reseta o contador geral no rodapé
+    atualizarContadorGeral();
 
-    // Manda para o servidor na mesma hora (sem esperar o clique no botão Salvar)
+    // Sincroniza abertura com o celular
+    const dadosParaSincronizar = {
+        id: nRomaneio,
+        nome: `Romaneio ${nRomaneio}`,
+        data: dataHora,
+        cliente: cliente,
+        total_itens: totalItens,
+        itens: itens,
+        cabecalho: { nRomaneio, dataHora, requisitante, contato, os, placa, cliente, modelo }
+    };
+
     fetch(`${window.location.origin}/definir-ativo`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(dadosParaSincronizar)
-    }).then(() => console.log("Sincronizado com o celular!"));
+    }).then(() => console.log("✅ Sincronizado com o celular!"));
 }
 
 
 
-function marcarItem(idx, checado) {
+function marcarItem(idx, checado, manual = true) {
     const linha = document.getElementById(`linha-${idx}`);
+    const contadorItem = document.getElementById(`cont-item-${idx}`);
+    if (!linha || !contadorItem) return;
+
+    // Pega o total que já está escrito depois da barra (ex: no "0/5" ele pega o 5)
+    const totalDoItem = linha.querySelector('.col-qtd span').textContent.split('/')[1];
+
     if (checado) {
         linha.classList.add('linha-conferida');
-        conferidos++;
+        contadorItem.textContent = totalDoItem; // Vira "5/5"
     } else {
         linha.classList.remove('linha-conferida');
-        conferidos--;
+        contadorItem.textContent = "0"; // Volta para "0/5"
     }
+
+    // Além de atualizar a linha, atualiza o contador geral lá embaixo
     atualizarContador();
+
+    if (manual) {
+        sincronizarClique(idx, checado);
+    }
 }
+
+
+// 2. O VIGIA: Faz o PC e o Celular "olharem" um para o outro
+setInterval(async () => {
+    const elementoInfo = document.getElementById('info-romaneio');
+    if (!elementoInfo || elementoInfo.style.display === 'none') return;
+
+    const idRomaneio = elementoInfo.textContent.replace(/\D/g, '');
+
+    try {
+        const res = await fetch(`${window.location.origin}/status-checks/${idRomaneio}`);
+        const checksServidor = await res.json();
+
+        // Aplica o que está no servidor na tela (sem disparar novo envio)
+        Object.keys(checksServidor).forEach(idCheck => {
+            const cb = document.getElementById(idCheck);
+            if (cb && cb.checked !== checksServidor[idCheck]) {
+                cb.checked = checksServidor[idCheck];
+                const idx = idCheck.split('-')[1];
+                marcarItem(idx, cb.checked, false); // false = não envia de volta
+            }
+        });
+    } catch (e) { /* Silencia erro de rede */ }
+}, 1500); // Checa a cada 1.5 segundos
 
 function atualizarContador() {
     document.getElementById('contagem-conferidos').textContent = conferidos;
@@ -720,9 +736,9 @@ async function salvarTabelaEmArquivo() {
     const numeroLimpo = nRomaneio.replace(/\D/g, '') || Date.now().toString();
 
     // MONTAGEM DO TEXTO FORMATADO (Respeitando espaços e quebras de linha)
-    let txt = `                                                                | REEMISSÃO |\n`;
-    const topoInfo = `Nº:   ${numeroLimpo} - ${dataRom} -+`;
-    txt += `+-----------------     ROMANEIO DE RETIRADA    ${topoInfo.padStart(55)}\n`;
+    let txt = `                       | REEMISSÃO |\n`;
+    const topoInfo = `Nº: ${numeroLimpo} - ${dataRom} -+`;
+    txt += `+-----------------ROMANEIO DE RETIRADA ${topoInfo.padStart(55)}\n`;
     txt += `| REQ.: ${requisitante}`.padEnd(42) + `CONTATO:   ${contato}`.padEnd(20) + `OS:      ${os}`.padEnd(15) + `|\n`;
     txt += `+------------------------------------------------------------------------------+\n`;
     txt += `| CLIENTE:     ${cliente}`.padEnd(55) + `PLACA:  ${placa}`.padEnd(22) + `|\n`;
@@ -772,6 +788,8 @@ async function salvarTabelaEmArquivo() {
         if (resposta.ok) {
             alert(`✔ Romaneio ${numeroLimpo} salvo! (${conferidos}/${totalItens} conferidos)`);
 
+            limparTabela()
+
             // Ativa o botão de download se ele existir
             const btnTxt = document.getElementById('botao-baixar-txt');
             if (btnTxt) {
@@ -789,36 +807,62 @@ async function salvarTabelaEmArquivo() {
 
 
 }
+function baixarTxt() {
+    const linhas = document.querySelectorAll('#corpo-tabela tr');
 
-async function baixarTxt() {
-
-    const btn = document.getElementById('botao-baixar-txt');
-    const id = btn.dataset.id;
-    const nomeArquivo = btn.dataset.nome || `r${id}.txt`;
-
-    try {
-        const resposta = await fetch(`http://localhost:3000/romaneio-txt/${id}`);
-        const dados = await resposta.json();
-
-        if (!dados.txt_formatado) {
-            alert('TXT não encontrado. Salve o romaneio primeiro!');
-            return;
-        }
-
-        const blob = new Blob([dados.txt_formatado], { type: 'text/plain;charset=utf-8' });
-        const link = document.createElement('a');
-        link.href = URL.createObjectURL(blob);
-        link.download = nomeArquivo;
-        link.style.display = 'none';
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-
-    } catch (err) {
-        alert('❌ Erro ao baixar TXT. Verifique se o servidor está rodando.');
-        console.error(err);
+    if (linhas.length === 0 || document.querySelector('.estado-vazio')) {
+        alert("Carregue um romaneio primeiro!");
+        return;
     }
+
+    // Pega o número e limpa tudo que não for dígito
+    const textoRom = document.getElementById('cab-num-romaneio')?.innerText ||
+        document.querySelector('.cabecalho-topo span')?.innerText || "0";
+    const numeroLimpo = textoRom.replace(/\D/g, '');
+
+    // Nome do arquivo conforme solicitado: r + numero
+    const nomeArquivo = `r${numeroLimpo}.txt`;
+
+    const dataRom = document.getElementById('cab-data-romaneio')?.innerText || "---";
+    const strongs = document.querySelectorAll('#cabecalho-corpo strong');
+
+    let txt = `                                                                | REEMISSÃO |\n`;
+    txt += `+-----------------     ROMANEIO DE RETIRADA    Nº: ${numeroLimpo.padEnd(5)} - ${dataRom.padEnd(16)} +\n`;
+    txt += `| REQ.: ${(strongs[0]?.innerText || '').padEnd(35)} CONTATO: ${(strongs[1]?.innerText || '').padEnd(15)} OS: ${(strongs[2]?.innerText || '').padEnd(10)} |\n`;
+    txt += `+------------------------------------------------------------------------------+\n`;
+    txt += `| CLIENTE: ${(strongs[4]?.innerText || '').padEnd(48)} PLACA: ${(strongs[3]?.innerText || '').padEnd(12)} |\n`;
+    txt += `| MODELO: ${(strongs[5]?.innerText || '').padEnd(68)} |\n`;
+    txt += `+------------------------------------------------------------------------------+\n`;
+    txt += `| --LOCACAO--     --QUANT--  --ITEM--  --DESCRICAO--                --CHECK--  |\n`;
+    txt += `+------------------------------------------------------------------------------+\n`;
+
+    linhas.forEach(linha => {
+        if (linha.querySelector('.estado-vazio')) return;
+
+        const loc = (linha.querySelector('.col-locacao')?.innerText.trim() || '').padEnd(16);
+        const qtd = (linha.querySelector('.col-qtd')?.innerText.trim() || '0').padStart(7);
+        const cod = (linha.querySelector('.col-codigo')?.innerText.trim() || '').padStart(8);
+        const desc = (linha.querySelector('.col-descricao')?.innerText.trim() || '');
+        const descF = (desc.length > 33 ? desc.substring(0, 30) + '...' : desc).padEnd(33);
+        const chk = linha.querySelector('input[type="checkbox"]')?.checked ? '[X]' : '[ ]';
+
+        txt += `| ${loc}  ${qtd}  ${cod}      ${descF}  ${chk.padStart(5)} |\n`;
+        txt += `+------------------------------------------------------------------------------+\n`;
+    });
+
+    txt += `\n| SEPARADOR:                 AUTORIZANTE:                RECEBIDO:             | \n`;
+    txt += `+------------------------------------------------------------------------------+ \n`;
+
+    const blob = new Blob([txt], { type: 'text/plain;charset=utf-8' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = nomeArquivo; // Aplica o nome rXXXX.txt
+    link.click();
+    URL.revokeObjectURL(link.href);
 }
+
+
+
 function abrirHistoricoRapido() {
     const num = prompt("Digite o número do Romaneio (ex: 15404):");
 
@@ -858,8 +902,8 @@ async function sincronizarComBanco(id) {
         if (romaneio && romaneio.itens_json) {
             // Puxa o cabeçalho que o PC salvou no banco. 
             // Se o banco não tiver o cabecalho_json, ele tenta usar os campos avulsos.
-            const cabecalhoReal = romaneio.cabecalho_json ? 
-                JSON.parse(romaneio.cabecalho_json) : 
+            const cabecalhoReal = romaneio.cabecalho_json ?
+                JSON.parse(romaneio.cabecalho_json) :
                 {
                     nRomaneio: id,
                     dataHora: romaneio.data,
@@ -877,7 +921,7 @@ async function sincronizarComBanco(id) {
                 total: romaneio.total_itens,
                 concluidos: 0,
                 produtos: JSON.parse(romaneio.itens_json),
-                cabecalho: cabecalhoReal 
+                cabecalho: cabecalhoReal
             };
 
             let historicoLocal = JSON.parse(localStorage.getItem('historico_hontec') || '[]');
@@ -891,4 +935,116 @@ async function sincronizarComBanco(id) {
     } catch (err) {
         console.error("Erro na sincronização:", err);
     }
+}
+
+function atualizarContador() {
+    // Conta quantos checkboxes estão marcados na tabela agora
+    const conferidosAgora = document.querySelectorAll('#corpo-tabela input[type="checkbox"]:checked').length;
+
+    // Atualiza os números na tela (0/20, 1/20, etc)
+    const spanConferidos = document.getElementById('contagem-conferidos');
+    const spanTotal = document.getElementById('contagem-total');
+
+    if (spanConferidos) spanConferidos.textContent = conferidosAgora;
+    if (spanTotal) spanTotal.textContent = totalItens;
+
+    // Ajusta as cores da barra conforme o progresso
+    const elementoContador = document.getElementById('secao-contador');
+    if (!elementoContador) return;
+
+    if (conferidosAgora === 0) {
+        elementoContador.style.background = "#fff0f0"; // Vermelho claro
+        elementoContador.style.color = "#CC0000";
+    } else if (conferidosAgora === totalItens && totalItens > 0) {
+        elementoContador.style.background = "#edf7f0"; // Verde claro
+        elementoContador.style.color = "#2d7a4a";
+    } else {
+        elementoContador.style.background = "#fff9eb"; // Laranja claro
+        elementoContador.style.color = "#f39c12";
+    }
+}
+function sincronizarClique(idx, checado) {
+    // 1. Identifica o ID do romaneio atual
+    const elementoInfo = document.getElementById('info-romaneio');
+    const numCabecalho = document.getElementById('cab-num-romaneio');
+    let textoId = (elementoInfo?.textContent || numCabecalho?.textContent || "").trim();
+    const idRomaneio = textoId.replace(/\D/g, '');
+
+    if (!idRomaneio) return;
+
+    // 2. Mapeia o estado de todos os checkboxes da tabela
+    const todosChecks = {};
+    document.querySelectorAll('#corpo-tabela input[type="checkbox"]').forEach(cb => {
+        todosChecks[cb.id] = cb.checked;
+    });
+
+    // 3. Pega os dados do cabeçalho para garantir que o celular não perca as infos
+    const cabecalhoAtual = {
+        nRomaneio: idRomaneio,
+        dataHora: document.getElementById('cab-data-romaneio')?.innerText.replace('Data: ', '') || "---",
+        requisitante: document.querySelector('.cabecalho-item strong')?.innerText || "---",
+        cliente: document.querySelector('.item-full strong')?.innerText || "---",
+        // Adicione os outros campos se necessário
+    };
+
+    // 4. Envia para a rota de sincronização de conferência
+    fetch(`${window.location.origin}/sincronizar-checks`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+            id: idRomaneio, 
+            checks: todosChecks,
+            cabecalho: cabecalhoAtual
+        })
+    }).catch(err => console.error("Erro ao sincronizar clique:", err));
+}
+function incrementarItem(idx, totalMaximo) {
+    const spanContador = document.getElementById(`cont-item-${idx}`);
+    const linha = document.getElementById(`linha-${idx}`);
+    const quadrado = document.getElementById(`status-quadrado-${idx}`);
+    const checkbox = document.getElementById(`chk-${idx}`);
+
+    let valorAtual = parseInt(spanContador.getAttribute('data-atual'));
+
+    // Lógica de incremento e reset
+    if (valorAtual < totalMaximo) {
+        valorAtual++;
+    } else {
+        valorAtual = 0;
+    }
+
+    spanContador.textContent = valorAtual;
+    spanContador.setAttribute('data-atual', valorAtual);
+
+    // RESET de classes de status
+    quadrado.className = 'quadrado-status';
+    quadrado.innerHTML = '';
+    linha.classList.remove('linha-conferida');
+    checkbox.checked = false;
+
+    // DEFINIÇÃO DOS ESTADOS
+    if (valorAtual === 0) {
+        quadrado.classList.add('status-vazio'); // Branco
+    } 
+    else if (valorAtual > 0 && valorAtual < totalMaximo) {
+        quadrado.classList.add('status-pendente'); // Amarelo
+        quadrado.innerHTML = '!'; // Exclamação
+    } 
+    else if (valorAtual === totalMaximo) {
+        quadrado.classList.add('status-concluido'); // Verde
+        quadrado.innerHTML = '✓'; // Check
+        linha.classList.add('linha-conferida');
+        checkbox.checked = true;
+    }
+
+    atualizarContadorGeral();
+}
+
+function atualizarContadorGeral() {
+    const totalDeLinhas = totalItens;
+    // Conta quantas linhas estão com a classe 'linha-conferida' (totalmente prontas)
+    const totalFinalizados = document.querySelectorAll('.linha-conferida').length;
+
+    document.getElementById('contagem-conferidos').textContent = totalFinalizados;
+    document.getElementById('contagem-total').textContent = totalDeLinhas;
 }

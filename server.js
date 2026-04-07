@@ -57,7 +57,7 @@ app.post('/salvar-romaneio', (req, res) => {
     const sql = `INSERT OR REPLACE INTO romaneios 
         (id, nome, data, cliente, total_itens, conferidos, itens_json, txt_formatado, status) 
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`;
-
+    romaneioAtivo = null;
     db.run(sql, [id, nome, data, cliente, total_itens, conferidos, JSON.stringify(itens), txt_formatado, status], function (err) {
         if (err) return res.status(500).json({ erro: err.message });
         res.json({ mensagem: "Romaneio salvo com sucesso!" });
@@ -187,6 +187,23 @@ app.post('/definir-ativo', (req, res) => {
         res.json({ mensagem: "Sincronizado!", id: romaneioAtivo });
     });
 });
+let conferenciasAtivas = {}; // Agora vai guardar { id: { checks: {...}, cabecalho: {...} } }
+
+app.post('/sincronizar-checks', (req, res) => {
+    const { id, checks, cabecalho } = req.body;
+    
+    // Se vier cabeçalho novo, a gente guarda. Se não, mantém o que já tinha.
+    if (!conferenciasAtivas[id]) conferenciasAtivas[id] = {};
+    
+    conferenciasAtivas[id].checks = checks;
+    if (cabecalho) conferenciasAtivas[id].cabecalho = cabecalho;
+    
+    res.json({ ok: true });
+});
+
+app.get('/status-checks/:id', (req, res) => {
+    res.json(conferenciasAtivas[req.params.id] || { checks: {}, cabecalho: null });
+});
 
 // --- INICIALIZAÇÃO ---
 app.listen(port, '0.0.0.0', () => {
@@ -194,3 +211,4 @@ app.listen(port, '0.0.0.0', () => {
     console.log(`💻 Local: http://localhost:${port}`);
     console.log(`📱 Celular: Use o IP do seu PC na porta ${port}`);
 });
+

@@ -27,3 +27,7 @@ db.all("SELECT id, nome, data, cliente, total_itens, conferidos, status FROM rom
 // ENDERECO DO SITE DA TABELA SALVA FORMATADA
 
 //http://localhost:3000/romaneio-txt/15404
+
+//    PAGINA DO SERVIDOR 
+
+//http://192.168.15.152:3000/

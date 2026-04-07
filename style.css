@@ -76,6 +76,7 @@ h1 {
     font-family: 'IBM Plex Mono', monospace;
     font-size: 12px;
     color: #888;
+    display: block;
 }
 
 
@@ -259,6 +260,11 @@ td.col-check {
 @media (max-width: 600px) {
     body {
         padding: 16px 10px;
+    }
+
+    #contagem-conferidos {
+        margin-left: 1%;
+        padding-left: 0%;
     }
 
     .linha-upload {
@@ -458,4 +464,46 @@ th:nth-child(5) {
     color: #888;
     font-size: 11px;
     margin-right: 8px;
+}
+
+#contagem-conferidos {
+    margin-left: 16%;
+}
+
+/* Quadrado base */
+.quadrado-status {
+    width: 24px;
+    height: 24px;
+    border: 2px solid #1a1a1a;
+    border-radius: 4px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    font-size: 16px;
+    transition: all 0.2s;
+}
+
+/* Estado 0: Branco */
+.status-vazio {
+    background: #fff;
+}
+
+/* Estado Intermediário: Amarelo com ! */
+.status-pendente {
+    background: #ffeb3b;
+    border-color: #fbc02d;
+    color: #000;
+}
+
+/* Estado Final: Verde com ✓ */
+.status-concluido {
+    background: #2d7a4a;
+    border-color: #2d7a4a;
+    color: #fff;
+}
+
+/* Impede que o clique no quadrado selecione texto */
+tr {
+    user-select: none;
 }
