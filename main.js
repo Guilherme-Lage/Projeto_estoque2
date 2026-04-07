@@ -1,5 +1,6 @@
 let totalItens = 0;
 let conferidos = 0;
+let mostrarApenasPendentes = true;
 
 function carregarArquivo(input) {
 
@@ -190,7 +191,7 @@ function atualizarContador() {
 }
 
 
-let mostrarApenasPendentes = false;
+
 
 async function filtrarTabela() {
     const busca = document.getElementById('busca-codigo').value.toLowerCase().trim();
@@ -389,13 +390,18 @@ async function dispararBusca(input, termoBusca) {
 }
 
 function alternarVisibilidade() {
+    // Inverte o estado
     mostrarApenasPendentes = !mostrarApenasPendentes;
+    
     const btn = document.getElementById('btn-ocultar');
-    btn.textContent = mostrarApenasPendentes ? "Mostrar Todos" : "Ocultar Conferidos";
-    btn.style.background = mostrarApenasPendentes ? "#00009C" : "#fff";
-    btn.style.color = mostrarApenasPendentes ? "#fff" : "#00009C";
+    if (btn) {
+        // Se está ocultando (true), o botão oferece "Mostrar Todos"
+        btn.textContent = mostrarApenasPendentes ? "Mostrar Todos" : "Ocultar Conferidos";
+      
+    }
     filtrarTabela();
 }
+
 
 function salvarNoHistorico() {
     if (typeof totalItens === 'undefined' || totalItens === 0) return;
@@ -1050,9 +1056,23 @@ function incrementarItem(idx, totalMaximo) {
         linha.classList.add('linha-excesso');
         checkbox.checked = true;
     }
+     if (mostrarApenasPendentes && (valorAtual === totalMaximo || valorAtual > totalMaximo)) {
+        // Dá um pequeno atraso de 300ms para o usuário ver o verde antes de sumir
+        setTimeout(() => {
+            if (mostrarApenasPendentes) { // Checa de novo se ainda está marcado para ocultar
+                linha.style.display = 'none';
+            }
+        }, 300);
+    } else if (valorAtual < totalMaximo) {
+        // Se o item voltou a ser pendente (0 ou !), ele deve reaparecer
+        linha.style.display = '';
+    }
 
     atualizarContadorGeral();
+    sincronizarClique(); //Avisa o servidor para sicronizao com o celular 
 }
+
+
 function atualizarContadorGeral() {
     const totalDeLinhas = totalItens;
     // Conta quantas linhas estão com a classe 'linha-conferida' (totalmente prontas)
@@ -1060,4 +1080,22 @@ function atualizarContadorGeral() {
 
     document.getElementById('contagem-conferidos').textContent = totalFinalizados;
     document.getElementById('contagem-total').textContent = totalDeLinhas;
+}
+
+
+//Codigo feito para nao ter erro na hora de atualizar tanto no pc tanto no celular 
+function aplicarMudancaLocal(idx, valor, total) {
+  
+
+    const linha = document.getElementById(`linha-${idx}`);
+    
+    if (mostrarApenasPendentes && valor >= total) {
+        setTimeout(() => {
+            if (mostrarApenasPendentes) linha.style.display = 'none';
+        }, 300);
+    } else {
+        linha.style.display = '';
+    }
+    
+    atualizarContadorGeral();
 }
