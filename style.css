@@ -507,3 +507,38 @@ th:nth-child(5) {
 tr {
     user-select: none;
 }
+.status-erro {
+    background: #CC0000;
+    border-color: #990000;
+    color: #fff;
+}
+
+/* Opcional: Deixar a linha levemente avermelhada para destacar o erro */
+.linha-excesso {
+    background: #fff0f0 !important;
+}
+
+.linha-excesso td {
+    color: #CC0000;
+    font-weight: bold;
+}
+/* Linha em andamento (Amarelo claro) */
+.linha-pendente {
+    background-color: #fff9c4 !important; /* Amarelo bem clarinho */
+}
+
+/* Linha concluída (Verde claro) */
+.linha-conferida {
+    background-color: #edf7f0 !important;
+}
+
+/* Linha com excesso (Vermelho claro) */
+.linha-excesso {
+    background-color: #ffebee !important;
+}
+
+/* Garantir que o texto mude de cor no erro */
+.linha-excesso td.col-qtd span {
+    color: #CC0000;
+    font-weight: bold;
+}

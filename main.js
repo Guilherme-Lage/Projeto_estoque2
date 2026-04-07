@@ -1006,40 +1006,53 @@ function incrementarItem(idx, totalMaximo) {
 
     let valorAtual = parseInt(spanContador.getAttribute('data-atual'));
 
-    // Lógica de incremento e reset
-    if (valorAtual < totalMaximo) {
-        valorAtual++;
+    // Lógica de incremento com confirmação para excesso
+    if (valorAtual >= totalMaximo) {
+        if (confirm(`Atenção: Quantidade (${valorAtual + 1}) excede o romaneio (${totalMaximo}). Deseja continuar?`)) {
+            valorAtual++;
+        } else {
+            valorAtual = 0; // Reseta se cancelar
+        }
     } else {
-        valorAtual = 0;
+        valorAtual++;
     }
 
     spanContador.textContent = valorAtual;
     spanContador.setAttribute('data-atual', valorAtual);
 
-    // RESET de classes de status
+    // Limpa todas as classes de cores antes de aplicar a nova
     quadrado.className = 'quadrado-status';
+    linha.classList.remove('linha-conferida', 'linha-pendente', 'linha-excesso');
     quadrado.innerHTML = '';
-    linha.classList.remove('linha-conferida');
     checkbox.checked = false;
 
-    // DEFINIÇÃO DOS ESTADOS
+    // ESTADO 1: Vazio (0)
     if (valorAtual === 0) {
-        quadrado.classList.add('status-vazio'); // Branco
+        quadrado.classList.add('status-vazio');
     } 
+    // ESTADO 2: Em andamento (Amarelo)
     else if (valorAtual > 0 && valorAtual < totalMaximo) {
-        quadrado.classList.add('status-pendente'); // Amarelo
-        quadrado.innerHTML = '!'; // Exclamação
+        quadrado.classList.add('status-pendente');
+        quadrado.innerHTML = '!';
+        linha.classList.add('linha-pendente');
     } 
+    // ESTADO 3: Concluído (Verde)
     else if (valorAtual === totalMaximo) {
-        quadrado.classList.add('status-concluido'); // Verde
-        quadrado.innerHTML = '✓'; // Check
+        quadrado.classList.add('status-concluido');
+        quadrado.innerHTML = '✓';
         linha.classList.add('linha-conferida');
+        checkbox.checked = true;
+    } 
+    // ESTADO 4: Excesso (Vermelho)
+    else if (valorAtual > totalMaximo) {
+        quadrado.classList.add('status-erro');
+        quadrado.innerHTML = 'X';
+        linha.classList.add('linha-excesso');
         checkbox.checked = true;
     }
 
     atualizarContadorGeral();
 }
-
 function atualizarContadorGeral() {
     const totalDeLinhas = totalItens;
     // Conta quantas linhas estão com a classe 'linha-conferida' (totalmente prontas)
