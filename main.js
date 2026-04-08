@@ -168,10 +168,10 @@ function incrementarItem(idx, totalMaximo) {
     let valorAtual = parseInt(spanContador.getAttribute('data-atual'));
 
     if (valorAtual >= totalMaximo) {
-        if (confirm(`Atenção: Quantidade (${valorAtual + 1}) excede o romaneio (${totalMaximo}). Deseja continuar?`)) {
+        if (alert(`⚠️Atenção: \n Foi colocado uma peça a mais favor devolver`)) {
             valorAtual++;
         } else {
-            valorAtual = 0;
+            valorAtual++;
         }
     } else {
         valorAtual++;

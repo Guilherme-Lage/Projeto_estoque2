@@ -166,8 +166,6 @@ td {
 
 td.col-locacao {
     font-family: 'IBM Plex Mono', monospace;
-    font-size: 11px;
-    color: #888;
     white-space: nowrap;
 }
 
@@ -181,7 +179,6 @@ td.col-qtd {
 
 td.col-codigo {
     font-family: 'IBM Plex Mono', monospace;
-    font-size: 12px;
     font-weight: 600;
     white-space: nowrap;
 }
@@ -306,18 +303,20 @@ td.col-check {
 
     td.col-locacao {
         grid-area: locacao;
-        font-size: 10px;
+        font-weight: bold;
     }
 
     td.col-codigo {
-        grid-area: codigo;
-        text-align: right;
+        grid-area: desc;
+        text-align: left;
+        align-self: center;
     }
 
     td.col-descricao {
         grid-area: desc;
         font-weight: 600;
         margin: 4px 0;
+        text-align: right;
     }
 
     td.col-qtd {
@@ -386,11 +385,7 @@ th:nth-child(5) {
 }
 
 .qtd-multipla {
-    background-color: #fff3cd;
-    color: #856404;
     font-weight: 800 !important;
-    border: 1px solid #ffeeba;
-    border-radius: 3px;
     padding: 2px 6px;
     display: inline-block;
     animation: pulse 2s infinite;
