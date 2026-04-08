@@ -182,13 +182,22 @@ let conferenciasAtivas = {};
 
 app.post('/definir-ativo', (req, res) => {
     const { id, cabecalho, itens } = req.body;
+
+    // id null = limpar (Novo Romaneio clicado no PC)
+    if (!id) {
+        romaneioAtivo = null;
+        console.log('Romaneio limpo — nenhum ativo no momento.');
+        return res.json({ ok: true });
+    }
+
     romaneioAtivo = id;
 
     // Guarda tudo o que o PC enviou na memória de curto prazo
     conferenciasAtivas[id] = {
         cabecalho: cabecalho,
         itens: itens,
-        estados: {} // Começa com os contadores zerados
+        checks: {},   // Começa sem checks
+        estados: {}
     };
 
     console.log(`Romaneio ${id} pronto para sincronização.`);
@@ -196,11 +205,12 @@ app.post('/definir-ativo', (req, res) => {
 });
 
 app.get('/obter-ativo', (req, res) => {
-    // Retorna o ID e o cabeçalho completo para o celular
     if (!romaneioAtivo) return res.json({ id: null });
-    res.json({ 
-        id: romaneioAtivo, 
-        cabecalho: conferenciasAtivas[romaneioAtivo].cabecalho 
+    const ativo = conferenciasAtivas[romaneioAtivo] || {};
+    res.json({
+        id: romaneioAtivo,
+        cabecalho: ativo.cabecalho || null,
+        itens: ativo.itens || []
     });
 });
 // Agora vai guardar { id: { checks: {...}, cabecalho: {...} } }
@@ -227,4 +237,3 @@ app.listen(port, '0.0.0.0', () => {
     console.log(`💻 Local: http://localhost:${port}`);
     console.log(`📱 Celular: Use o IP do seu PC na porta ${port}`);
 });
-

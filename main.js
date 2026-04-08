@@ -126,7 +126,39 @@ function processarTexto(texto) {
         tr.id = `linha-${idx}`;
         const valorQtdTotal = parseInt(item.qtd);
         const classeDestaque = valorQtdTotal > 1 ? 'qtd-multipla' : '';
-        tr.setAttribute('onclick', `incrementarItem(${idx}, ${valorQtdTotal})`);
+        
+        // --- LOGICA DE CLIQUE E EDIÇÃO ---
+        let timerToque;
+        let foiCliqueLongo = false;
+
+        // Clique Normal (Soma +1)
+        tr.addEventListener('click', () => {
+            if (foiCliqueLongo) {
+                foiCliqueLongo = false;
+                return;
+            }
+            incrementarItem(idx, valorQtdTotal);
+        });
+
+        // Botão Direito (PC: Subtrai -1)
+        tr.addEventListener('contextmenu', (e) => {
+            e.preventDefault();
+            subtrairItem(idx, valorQtdTotal);
+        });
+
+        // Toque Longo (Celular: Subtrai -1)
+        tr.addEventListener('touchstart', () => {
+            foiCliqueLongo = false;
+            timerToque = setTimeout(() => {
+                foiCliqueLongo = true;
+                subtrairItem(idx, valorQtdTotal);
+                if (navigator.vibrate) navigator.vibrate(80);
+            }, 800);
+        }, { passive: true });
+
+        tr.addEventListener('touchend', () => clearTimeout(timerToque));
+        tr.addEventListener('touchmove', () => clearTimeout(timerToque));
+
         tr.style.cursor = 'pointer';
         tr.innerHTML = `
             <td class="col-locacao">${item.locacao}</td>
@@ -147,14 +179,13 @@ function processarTexto(texto) {
 
     atualizarContadorGeral();
 
-    // Avisa o servidor que este romaneio está ativo (PC e celular ficam cientes)
     fetch(`${window.location.origin}/definir-ativo`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id: nRomaneio, cabecalho: cab, itens: itens })
     });
 }
-
+ 
 // ─────────────────────────────────────────────────────────────────────────────
 // INTERAÇÃO COM OS ITENS
 // ─────────────────────────────────────────────────────────────────────────────
@@ -277,41 +308,104 @@ setInterval(async () => {
         const resAtivo = await fetch(`${window.location.origin}/obter-ativo`);
         const dadosAtivo = await resAtivo.json();
 
-        if (!dadosAtivo.id || dadosAtivo.id === '---') return;
+        // 2. Romaneio foi limpo no PC — limpa o celular também
+        if (!dadosAtivo.id) {
+            if (ultimoIdSincronizado !== null) {
+                ultimoIdSincronizado = null;
+                romaneioIdAtivo = null;
+                itensAtuais = [];
+                totalItens = 0;
+                ultimoHashChecks = '';
+                document.getElementById('corpo-tabela').innerHTML =
+                    `<tr><td colspan="5" class="estado-vazio"><p>Nenhum arquivo carregado</p></td></tr>`;
+                document.getElementById('painel-cabecalho').style.display = 'none';
+                document.getElementById('secao-contador').style.display = 'none';
+                document.getElementById('botao-limpar').style.display = 'none';
+                document.getElementById('info-romaneio').style.display = 'none';
+            }
+            return;
+        }
 
-        // 2. Se o romaneio ativo mudou (novo romaneio aberto no PC) — só aplica no celular
+        // 3. Romaneio mudou — carrega no celular
         if (dadosAtivo.id !== ultimoIdSincronizado) {
             ultimoIdSincronizado = dadosAtivo.id;
 
-            // Preenche o cabeçalho com dados do servidor
-            if (dadosAtivo.cabecalho) {
-                renderizarCabecalho(dadosAtivo.cabecalho);
-            }
-
-            // Só popula a tabela no celular (telas menores)
-            // No PC a tabela é carregada via arquivo/Apollo
+            // Só carrega automaticamente no celular (tela pequena)
             if (window.innerWidth < 800) {
-                sincronizarComBanco(dadosAtivo.id);
+                // Se veio com itens no /obter-ativo, usa direto (romaneio novo não salvo ainda)
+                if (dadosAtivo.itens && dadosAtivo.itens.length > 0) {
+                    carregarItensDoServidor(dadosAtivo.id, dadosAtivo.cabecalho, dadosAtivo.itens);
+                } else {
+                    // Tenta buscar do banco (romaneio já salvo)
+                    sincronizarComBanco(dadosAtivo.id);
+                }
             }
         }
 
-        // 3. Busca o estado atual dos checks no servidor
+        // 4. Busca o estado atual dos checks no servidor
         const idParaChecar = romaneioIdAtivo || dadosAtivo.id;
+        if (!idParaChecar) return;
+
         const resChecks = await fetch(`${window.location.origin}/status-checks/${idParaChecar}`);
         const dadosChecks = await resChecks.json();
 
         if (!dadosChecks.checks || Object.keys(dadosChecks.checks).length === 0) return;
 
-        // 4. Compara com o hash local — só aplica se for diferente (evita loop)
+        // 5. Compara com o hash local — só aplica se for diferente (evita loop)
         const hashServidor = hashChecks(dadosChecks.checks);
         if (hashServidor === ultimoHashChecks) return;
 
-        // 5. Aplica os checks que vieram do servidor na tabela local
         ultimoHashChecks = hashServidor;
         aplicarChecksDoServidor(dadosChecks.checks);
 
     } catch (e) { /* servidor temporariamente inacessível */ }
 }, 1500);
+
+// Carrega itens diretamente do servidor sem precisar do banco
+function carregarItensDoServidor(id, cabecalho, itens) {
+    if (!itens || itens.length === 0) return;
+
+    romaneioIdAtivo = id;
+    itensAtuais = itens;
+    totalItens = itens.length;
+    ultimoHashChecks = '';
+
+    if (cabecalho) renderizarCabecalho(cabecalho);
+
+    document.getElementById('info-romaneio').style.display = 'block';
+    document.getElementById('info-romaneio').textContent = `Romaneio N°: ${id} | Itens: ${totalItens}`;
+    document.getElementById('secao-contador').style.display = 'block';
+    document.getElementById('botao-limpar').style.display = 'inline-block';
+
+    const corpoTabela = document.getElementById('corpo-tabela');
+    corpoTabela.innerHTML = '';
+
+    itens.forEach((item, idx) => {
+        const tr = document.createElement('tr');
+        tr.id = `linha-${idx}`;
+        const valorTotal = parseInt(item.qtd);
+        const classeDestaque = valorTotal > 1 ? 'qtd-multipla' : '';
+        tr.setAttribute('onclick', `incrementarItem(${idx}, ${valorTotal})`);
+        tr.style.cursor = 'pointer';
+        tr.innerHTML = `
+            <td class="col-locacao">${item.locacao}</td>
+            <td class="col-qtd">
+                <span class="${classeDestaque}">
+                    <span id="cont-item-${idx}" data-atual="0">0</span> / ${valorTotal}
+                </span>
+            </td>
+            <td class="col-codigo">${item.codigo}</td>
+            <td class="col-descricao">${item.descricao}</td>
+            <td class="col-check" style="text-align: center;">
+                <div id="status-quadrado-${idx}" class="quadrado-status status-vazio"></div>
+                <input type="checkbox" id="chk-${idx}" style="display:none">
+            </td>
+        `;
+        corpoTabela.appendChild(tr);
+    });
+
+    atualizarContadorGeral();
+}
 
 // Aplica o estado de checks recebido do servidor na tabela exibida
 function aplicarChecksDoServidor(checks) {
@@ -609,38 +703,66 @@ function salvarNoHistorico() {
     if (typeof totalItens === 'undefined' || totalItens === 0) return;
 
     const elementoInfo = document.getElementById('info-romaneio');
-    const nomeRomaneio = (elementoInfo && elementoInfo.textContent) ? elementoInfo.textContent : 'Documento Avulso';
-    const dataHora = new Date().toLocaleString('pt-BR');
+    const nomeRomaneio = (elementoInfo && elementoInfo.textContent) ? elementoInfo.textContent : "Documento Avulso";
+    const dataHoraRegistro = new Date().toLocaleString('pt-BR');
 
-    const itensAtuaisSnapshot = [];
-    document.querySelectorAll('#corpo-tabela tr').forEach((linha) => {
+    // 1. CAPTURA OS ITENS DA TABELA COM A QUANTIDADE PARCIAL
+    const itensAtuaisParaHistorico = [];
+    const linhas = document.querySelectorAll('#corpo-tabela tr');
+
+    linhas.forEach((linha) => {
         if (linha.querySelector('.estado-vazio')) return;
-        itensAtuaisSnapshot.push({
+
+        const spanContador = linha.querySelector('[id^="cont-item-"]');
+        const valorAtual = spanContador ? parseInt(spanContador.getAttribute('data-atual')) : 0;
+        
+        const textoQtdCompleto = linha.querySelector('.col-qtd')?.innerText || '0 / 0';
+        const valorTotal = parseInt(textoQtdCompleto.split('/')[1]) || 1;
+
+        itensAtuaisParaHistorico.push({
             locacao: linha.querySelector('.col-locacao')?.textContent || '',
-            qtd: linha.querySelector('.col-qtd')?.textContent || '0',
+            qtd: valorTotal,
+            valorAtual: valorAtual, // SALVA O PROGRESSO (EX: 1 de 2)
             codigo: linha.querySelector('.col-codigo')?.textContent || '',
             descricao: linha.querySelector('.col-descricao')?.textContent || '',
             conferido: linha.classList.contains('linha-conferida')
         });
     });
 
+    // 2. CAPTURA OS DADOS DO CABEÇALHO (Objeto Global ou DOM)
+    const dadosCabecalho = cabecalhoAtual || null; 
+
     const registroNovo = {
         nome: nomeRomaneio,
-        data: dataHora,
+        data: dataHoraRegistro,
         total: totalItens,
         concluidos: conferidos,
-        produtos: itensAtuaisSnapshot,
-        cabecalho: { ...cabecalhoAtual }  // usa o objeto global — sempre correto
+        produtos: itensAtuaisParaHistorico,
+        cabecalho: dadosCabecalho
     };
 
     let historico = JSON.parse(localStorage.getItem('historico_hontec') || '[]');
-    if (historico.length > 0 && historico[0].nome === nomeRomaneio) historico.shift();
+
+    // Evita duplicar o mesmo romaneio se ele for o último da lista
+    if (historico.length > 0 && historico[0].nome === nomeRomaneio) {
+        historico.shift();
+    }
+
     historico.unshift(registroNovo);
-    if (historico.length > 8) historico = historico.slice(0, 8);
+
+    // Mantém apenas os últimos 8 romaneios
+    if (historico.length > 8) {
+        historico = historico.slice(0, 8);
+    }
+
     localStorage.setItem('historico_hontec', JSON.stringify(historico));
-    console.log('Histórico atualizado com sucesso (Limite 8).');
-    atualizarDadosDoHistorico();
+    console.log("Histórico local atualizado com quantidades parciais.");
+    
+    if (typeof atualizarDadosDoHistorico === 'function') {
+        atualizarDadosDoHistorico();
+    }
 }
+
 
 function mostrarHistorico() {
     const painel = document.getElementById('secao-historico');
@@ -734,6 +856,19 @@ function carregarDoHistorico(indice) {
     atualizarContadorGeral();
     document.getElementById('secao-historico').style.display = 'none';
     if (typeof filtrarTabela === 'function') filtrarTabela();
+
+    // Sincroniza com o celular — avisa que este romaneio está ativo agora
+    if (rom.cabecalho && romaneioIdAtivo) {
+        fetch(`${window.location.origin}/definir-ativo`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                id: romaneioIdAtivo,
+                cabecalho: rom.cabecalho,
+                itens: rom.produtos
+            })
+        }).catch(() => {});
+    }
 }
 
 
@@ -803,6 +938,13 @@ function limparTabela() {
     itensAtuais = [];
     romaneioIdAtivo = null;
     ultimoHashChecks = '';
+
+    // Avisa o servidor que não há romaneio ativo (celular vai limpar também)
+    fetch(`${window.location.origin}/definir-ativo`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: null, cabecalho: null, itens: [] })
+    }).catch(() => {});
 
     const corpoTabela = document.getElementById('corpo-tabela');
     if (corpoTabela) {
@@ -1019,7 +1161,18 @@ async function abrirHistoricoRapido() {
         const dados = await resposta.json();
 
         // Aqui você chama a função que já corrigimos para montar a tabela
-        sincronizarComBanco(numeroLimpo);
+        await sincronizarComBanco(numeroLimpo);
+
+        // Avisa o servidor que este romaneio está ativo (celular vai sincronizar)
+        fetch(`${window.location.origin}/definir-ativo`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                id: numeroLimpo,
+                cabecalho: cabecalhoAtual,
+                itens: itensAtuais
+            })
+        }).catch(() => {});
 
     } catch (err) {
         console.error("Erro na requisição:", err);
@@ -1036,4 +1189,31 @@ function aplicarMudancaLocal(idx, valor, total) {
         linha.style.display = '';
     }
     atualizarContadorGeral();
+}
+
+function subtrairItem(idx, totalMaximo, manual = true) {
+    const spanContador = document.getElementById(`cont-item-${idx}`);
+    const linha = document.getElementById(`linha-${idx}`);
+    const quadrado = document.getElementById(`status-quadrado-${idx}`);
+    const checkbox = document.getElementById(`chk-${idx}`);
+
+    let valorAtual = parseInt(spanContador.getAttribute('data-atual'));
+
+    // Só subtrai se for maior que 0
+    if (valorAtual > 0) {
+        valorAtual--;
+    } else {
+        return; // Não faz nada se já for 0
+    }
+
+    spanContador.textContent = valorAtual;
+    spanContador.setAttribute('data-atual', valorAtual);
+
+    // Atualiza o visual (Cores e Ícones)
+    atualizarVisualItem(idx, valorAtual, totalMaximo);
+    atualizarContadorGeral();
+
+    if (manual) {
+        sincronizarClique(); // Avisa o outro aparelho da correção
+    }
 }
