@@ -90,8 +90,19 @@ app.get('/buscar-produto/:termo', (req, res) => {
 
 // 4. Buscar Romaneio Específico
 app.get('/romaneio/:id', (req, res) => {
-    db.get("SELECT * FROM romaneios WHERE id = ?", [req.params.id], (err, row) => {
-        if (err) return res.status(500).json({ erro: err.message });
+    const idBusca = req.params.id.trim();
+    // Tenta buscar o ID tanto como Texto quanto como Número
+    const sql = `SELECT * FROM romaneios WHERE CAST(id AS TEXT) = ? OR id = ?`;
+
+    db.get(sql, [idBusca, idBusca], (err, row) => {
+        if (err) {
+            console.error("Erro no SQL:", err.message);
+            return res.status(500).json({ erro: err.message });
+        }
+        if (!row) {
+            console.log(`Romaneio ${idBusca} não encontrado no banco.`);
+            return res.status(404).json({ mensagem: "Não encontrado" });
+        }
         res.json(row);
     });
 });

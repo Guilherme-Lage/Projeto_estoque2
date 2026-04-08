@@ -79,14 +79,14 @@ function carregarArquivo(input) {
 function processarTexto(texto) {
     const linhas = texto.split('\n');
 
-    const nRomaneio    = texto.match(/N[º°\.]?\s*[:\.]?\s*(\d+)/i)?.[1] || '---';
-    const dataHora     = texto.match(/(\d{2}\/\d{2}\/\d{4}\s*\d{2}:\d{2})/)?.[1] || '---';
+    const nRomaneio = texto.match(/N[º°\.]?\s*[:\.]?\s*(\d+)/i)?.[1] || '---';
+    const dataHora = texto.match(/(\d{2}\/\d{2}\/\d{4}\s*\d{2}:\d{2})/)?.[1] || '---';
     const requisitante = texto.match(/REQ\.?[:\.]?\s*(.*?)\s*CONTATO/i)?.[1]?.trim() || '---';
-    const contato      = texto.match(/CONTATO\s*[:\.]?\s*(\d+)/i)?.[1] || '---';
-    const os           = texto.match(/OS\s*[:\.]?\s*(\d*)/i)?.[1] || '---';
-    const cliente      = texto.match(/CLIENTE\s*[:\.]?\s*(.*?)\s*PLACA/i)?.[1]?.trim() || '---';
-    const placa        = texto.match(/PLACA\s*[:\.]?\s*(.*?)(?=\s*\||\n|$)/i)?.[1]?.trim() || '---';
-    const modelo       = texto.match(/MODELO\s*[:\.]?\s*(.*?)(?=\s*\||\n|$)/i)?.[1]?.trim() || '---';
+    const contato = texto.match(/CONTATO\s*[:\.]?\s*(\d+)/i)?.[1] || '---';
+    const os = texto.match(/OS\s*[:\.]?\s*(\d*)/i)?.[1] || '---';
+    const cliente = texto.match(/CLIENTE\s*[:\.]?\s*(.*?)\s*PLACA/i)?.[1]?.trim() || '---';
+    const placa = texto.match(/PLACA\s*[:\.]?\s*(.*?)(?=\s*\||\n|$)/i)?.[1]?.trim() || '---';
+    const modelo = texto.match(/MODELO\s*[:\.]?\s*(.*?)(?=\s*\||\n|$)/i)?.[1]?.trim() || '---';
 
     const cab = { nRomaneio, dataHora, requisitante, contato, os, placa, cliente, modelo };
     renderizarCabecalho(cab);
@@ -96,9 +96,9 @@ function processarTexto(texto) {
     for (let linha of linhas) {
         const match = linha.match(regex);
         if (match) {
-            const locacao   = match[1].trim();
-            const qtd       = match[2].trim().replace(',', '.');
-            const codigo    = match[3].trim();
+            const locacao = match[1].trim();
+            const qtd = match[2].trim().replace(',', '.');
+            const codigo = match[3].trim();
             const descricao = match[4].trim();
             if (locacao === 'LOCACAO' || locacao === '--LOCACAO--') continue;
             itens.push({ locacao, qtd, codigo, descricao });
@@ -112,7 +112,7 @@ function processarTexto(texto) {
     }
 
     itensAtuais = itens;
-    totalItens  = itens.length;
+    totalItens = itens.length;
     romaneioIdAtivo = nRomaneio;
 
     document.getElementById('secao-contador').style.display = 'block';
@@ -161,9 +161,9 @@ function processarTexto(texto) {
 
 function incrementarItem(idx, totalMaximo) {
     const spanContador = document.getElementById(`cont-item-${idx}`);
-    const linha        = document.getElementById(`linha-${idx}`);
-    const quadrado     = document.getElementById(`status-quadrado-${idx}`);
-    const checkbox     = document.getElementById(`chk-${idx}`);
+    const linha = document.getElementById(`linha-${idx}`);
+    const quadrado = document.getElementById(`status-quadrado-${idx}`);
+    const checkbox = document.getElementById(`chk-${idx}`);
 
     let valorAtual = parseInt(spanContador.getAttribute('data-atual'));
 
@@ -180,9 +180,9 @@ function incrementarItem(idx, totalMaximo) {
     spanContador.textContent = valorAtual;
     spanContador.setAttribute('data-atual', valorAtual);
 
-    quadrado.className  = 'quadrado-status';
-    quadrado.innerHTML  = '';
-    checkbox.checked    = false;
+    quadrado.className = 'quadrado-status';
+    quadrado.innerHTML = '';
+    checkbox.checked = false;
     linha.classList.remove('linha-conferida', 'linha-pendente', 'linha-excesso');
 
     if (valorAtual === 0) {
@@ -217,13 +217,17 @@ function incrementarItem(idx, totalMaximo) {
 
 function atualizarVisualItem(idx, atual, total) {
     const quadrado = document.getElementById(`status-quadrado-${idx}`);
-    const linha    = document.getElementById(`linha-${idx}`);
+    const linha = document.getElementById(`linha-${idx}`);
     if (!quadrado || !linha) return;
 
     quadrado.className = 'quadrado-status';
     linha.classList.remove('linha-conferida', 'linha-pendente', 'linha-excesso');
     quadrado.innerHTML = '';
-
+    if (atual > 0 && atual < total) {
+        quadrado.classList.add('status-pendente'); // Amarelo
+        linha.classList.add('linha-pendente');     // Fundo Amarelo
+        quadrado.innerHTML = '!';
+    }
     if (atual === 0) {
         quadrado.classList.add('status-vazio');
     } else if (atual < total) {
@@ -389,7 +393,7 @@ async function sincronizarComBanco(id) {
 // ─────────────────────────────────────────────────────────────────────────────
 
 async function filtrarTabela() {
-    const busca  = document.getElementById('busca-codigo').value.toLowerCase().trim();
+    const busca = document.getElementById('busca-codigo').value.toLowerCase().trim();
     const linhas = document.querySelectorAll('#corpo-tabela tr');
 
     if (busca === '') {
@@ -415,7 +419,7 @@ async function filtrarTabela() {
 
     linhas.forEach(linha => {
         if (linha.querySelector('.estado-vazio')) return;
-        const textoCodigo    = linha.querySelector('.col-codigo')?.innerText.toLowerCase().trim() || '';
+        const textoCodigo = linha.querySelector('.col-codigo')?.innerText.toLowerCase().trim() || '';
         const textoDescricao = linha.querySelector('.col-descricao')?.innerText.toLowerCase() || '';
         let corresponde = false;
         if (buscaEhNumero) {
@@ -462,7 +466,7 @@ document.getElementById('busca-codigo').addEventListener('keydown', async functi
     try {
         const resposta = await fetch(`${window.location.origin}/buscar-produto/${termoBusca}`);
         if (resposta.ok) {
-            const produto    = await resposta.json();
+            const produto = await resposta.json();
             const codigoReal = produto[0].ITEM_ESTOQUE_PUB.toString().trim();
             let achou = false;
             for (let linha of linhas) {
@@ -504,7 +508,7 @@ document.getElementById('busca-codigo').addEventListener('input', function () {
 
 async function dispararBusca(input, termoBusca) {
     const linhas = document.querySelectorAll('#corpo-tabela tr');
-    const termo  = termoBusca.trim();
+    const termo = termoBusca.trim();
     if (!termo) return;
 
     let linhaEncontrada = null;
@@ -520,8 +524,8 @@ async function dispararBusca(input, termoBusca) {
         try {
             const res = await fetch(`${window.location.origin}/buscar-produto/${termo}`);
             if (res.ok) {
-                const produtos    = await res.json();
-                const codigoReal  = produtos[0].ITEM_ESTOQUE_PUB.toString().trim();
+                const produtos = await res.json();
+                const codigoReal = produtos[0].ITEM_ESTOQUE_PUB.toString().trim();
                 for (let linha of linhas) {
                     if (linha.querySelector('.col-codigo')?.innerText.trim() === codigoReal) {
                         linhaEncontrada = linha;
@@ -533,7 +537,7 @@ async function dispararBusca(input, termoBusca) {
     }
 
     if (linhaEncontrada) {
-        const idx      = linhaEncontrada.id.replace('linha-', '');
+        const idx = linhaEncontrada.id.replace('linha-', '');
         const spanCont = document.getElementById(`cont-item-${idx}`);
         const totalMax = parseInt(spanCont.parentElement.textContent.split('/')[1]);
         incrementarItem(idx, totalMax);
@@ -564,19 +568,19 @@ function alternarVisibilidade() {
 function atualizarContador() {
     const elementoContador = document.getElementById('secao-contador');
     document.getElementById('contagem-conferidos').textContent = conferidos;
-    document.getElementById('contagem-total').textContent      = totalItens;
+    document.getElementById('contagem-total').textContent = totalItens;
 
     if (conferidos === 0) {
-        elementoContador.style.background  = '#fff0f0';
-        elementoContador.style.color       = '#CC0000';
+        elementoContador.style.background = '#fff0f0';
+        elementoContador.style.color = '#CC0000';
         elementoContador.style.borderColor = '#CC0000';
     } else if (conferidos === totalItens && totalItens > 0) {
-        elementoContador.style.background  = '#edf7f0';
-        elementoContador.style.color       = '#2d7a4a';
+        elementoContador.style.background = '#edf7f0';
+        elementoContador.style.color = '#2d7a4a';
         elementoContador.style.borderColor = '#2d7a4a';
     } else {
-        elementoContador.style.background  = '#fff9eb';
-        elementoContador.style.color       = '#f39c12';
+        elementoContador.style.background = '#fff9eb';
+        elementoContador.style.color = '#f39c12';
         elementoContador.style.borderColor = '#f39c12';
     }
 }
@@ -584,7 +588,7 @@ function atualizarContador() {
 function atualizarContadorGeral() {
     const totalFinalizados = document.querySelectorAll('.linha-conferida').length;
     document.getElementById('contagem-conferidos').textContent = totalFinalizados;
-    document.getElementById('contagem-total').textContent      = totalItens;
+    document.getElementById('contagem-total').textContent = totalItens;
 
     const el = document.getElementById('secao-contador');
     if (!el) return;
@@ -606,26 +610,26 @@ function salvarNoHistorico() {
 
     const elementoInfo = document.getElementById('info-romaneio');
     const nomeRomaneio = (elementoInfo && elementoInfo.textContent) ? elementoInfo.textContent : 'Documento Avulso';
-    const dataHora     = new Date().toLocaleString('pt-BR');
+    const dataHora = new Date().toLocaleString('pt-BR');
 
     const itensAtuaisSnapshot = [];
     document.querySelectorAll('#corpo-tabela tr').forEach((linha) => {
         if (linha.querySelector('.estado-vazio')) return;
         itensAtuaisSnapshot.push({
-            locacao:   linha.querySelector('.col-locacao')?.textContent || '',
-            qtd:       linha.querySelector('.col-qtd')?.textContent || '0',
-            codigo:    linha.querySelector('.col-codigo')?.textContent || '',
+            locacao: linha.querySelector('.col-locacao')?.textContent || '',
+            qtd: linha.querySelector('.col-qtd')?.textContent || '0',
+            codigo: linha.querySelector('.col-codigo')?.textContent || '',
             descricao: linha.querySelector('.col-descricao')?.textContent || '',
             conferido: linha.classList.contains('linha-conferida')
         });
     });
 
     const registroNovo = {
-        nome:      nomeRomaneio,
-        data:      dataHora,
-        total:     totalItens,
+        nome: nomeRomaneio,
+        data: dataHora,
+        total: totalItens,
         concluidos: conferidos,
-        produtos:  itensAtuaisSnapshot,
+        produtos: itensAtuaisSnapshot,
         cabecalho: { ...cabecalhoAtual }  // usa o objeto global — sempre correto
     };
 
@@ -672,21 +676,23 @@ function atualizarDadosDoHistorico() {
 
 function carregarDoHistorico(indice) {
     const dados = JSON.parse(localStorage.getItem('historico_hontec') || '[]');
-    const rom   = dados[indice];
+    const rom = dados[indice];
     if (!rom || !rom.produtos) {
         alert('Não há dados de produtos salvos para este romaneio.');
         return;
     }
 
-    totalItens      = rom.total;
-    conferidos      = rom.produtos.filter(p => (p.conferido_qtd || 0) >= parseInt(p.qtd)).length;
-    itensAtuais     = rom.produtos;
+    // Padronização dos dados para garantir que o contador geral funcione
+    totalItens = rom.total;
+    // Verifica se o item atingiu o total usando o campo valorAtual
+    conferidos = rom.produtos.filter(p => (p.valorAtual || 0) >= parseInt(p.qtd)).length;
+    itensAtuais = rom.produtos;
     romaneioIdAtivo = rom.cabecalho?.nRomaneio || null;
 
-    document.getElementById('info-romaneio').style.display  = 'block';
-    document.getElementById('info-romaneio').textContent    = rom.nome;
+    document.getElementById('info-romaneio').style.display = 'block';
+    document.getElementById('info-romaneio').textContent = rom.nome;
     document.getElementById('secao-contador').style.display = 'block';
-    document.getElementById('botao-limpar').style.display   = 'inline-block';
+    document.getElementById('botao-limpar').style.display = 'inline-block';
 
     if (rom.cabecalho) renderizarCabecalho(rom.cabecalho);
 
@@ -694,10 +700,13 @@ function carregarDoHistorico(indice) {
     corpoTabela.innerHTML = '';
 
     rom.produtos.forEach((item, idx) => {
-        const tr          = document.createElement('tr');
-        tr.id             = `linha-${idx}`;
-        const valorTotal  = parseInt(item.qtd);
-        const valorAtual  = item.conferido_qtd || (item.conferido ? valorTotal : 0);
+        const tr = document.createElement('tr');
+        tr.id = `linha-${idx}`;
+        
+        const valorTotal = parseInt(item.qtd);
+        // Recupera o valorAtual salvo. Se não existir (romaneio antigo), usa a lógica do check.
+        const valorAtual = item.valorAtual !== undefined ? item.valorAtual : (item.conferido ? valorTotal : 0);
+        
         const classeDestaque = valorTotal > 1 ? 'qtd-multipla' : '';
 
         tr.setAttribute('onclick', `incrementarItem(${idx}, ${valorTotal})`);
@@ -717,6 +726,8 @@ function carregarDoHistorico(indice) {
           </td>
         `;
         corpoTabela.appendChild(tr);
+        
+        // Esta função vai garantir que o amarelo apareça se o valor for (1 / 2)
         atualizarVisualItem(idx, valorAtual, valorTotal);
     });
 
@@ -724,6 +735,7 @@ function carregarDoHistorico(indice) {
     document.getElementById('secao-historico').style.display = 'none';
     if (typeof filtrarTabela === 'function') filtrarTabela();
 }
+
 
 // ─────────────────────────────────────────────────────────────────────────────
 // COLAR DO APOLLO
@@ -734,17 +746,17 @@ async function colarDoApollo() {
 
     const btn = document.querySelector('button[onclick="colarDoApollo()"]');
     const textoOriginal = btn.textContent;
-    btn.disabled    = true;
+    btn.disabled = true;
     btn.textContent = 'Aguarde...';
 
     try {
         const resposta = await fetch('http://localhost:3000/copiar-romaneio');
-        const dados    = await resposta.json();
+        const dados = await resposta.json();
 
         if (!resposta.ok) throw new Error(dados.erro || 'Erro desconhecido');
         if (!dados.conteudo || dados.conteudo.trim() === '') {
             alert('O Bloco de Notas está vazio!');
-            btn.disabled    = false;
+            btn.disabled = false;
             btn.textContent = textoOriginal;
             return;
         }
@@ -752,21 +764,21 @@ async function colarDoApollo() {
         processarTexto(dados.conteudo);
         document.getElementById('legenda-arquivo').textContent = 'Copiado do Bloco de Notas';
         btn.textContent = '✔ Copiado!';
-        btn.style.background   = '#2d7a4a';
-        btn.style.color        = '#fff';
-        btn.style.borderColor  = '#2d7a4a';
+        btn.style.background = '#2d7a4a';
+        btn.style.color = '#fff';
+        btn.style.borderColor = '#2d7a4a';
 
         setTimeout(() => {
-            btn.disabled       = false;
-            btn.textContent    = textoOriginal;
-            btn.style.background  = '';
-            btn.style.color       = '';
+            btn.disabled = false;
+            btn.textContent = textoOriginal;
+            btn.style.background = '';
+            btn.style.color = '';
             btn.style.borderColor = '';
         }, 2000);
 
     } catch (err) {
         alert('Erro: servidor offline. Rode o server.js primeiro!');
-        btn.disabled    = false;
+        btn.disabled = false;
         btn.textContent = textoOriginal;
         console.error('Erro ao copiar romaneio:', err);
     }
@@ -782,13 +794,13 @@ function limparTabela() {
     const input = document.getElementById('entrada-arquivo');
     if (input) input.value = '';
     document.getElementById('legenda-arquivo').textContent = 'Insira o .txt do Apollo';
-    document.getElementById('info-romaneio').style.display  = 'none';
+    document.getElementById('info-romaneio').style.display = 'none';
     document.getElementById('secao-contador').style.display = 'none';
-    document.getElementById('botao-limpar').style.display   = 'none';
+    document.getElementById('botao-limpar').style.display = 'none';
 
-    totalItens      = 0;
-    conferidos      = 0;
-    itensAtuais     = [];
+    totalItens = 0;
+    conferidos = 0;
+    itensAtuais = [];
     romaneioIdAtivo = null;
     ultimoHashChecks = '';
 
@@ -809,8 +821,8 @@ function limparTabela() {
 // ─────────────────────────────────────────────────────────────────────────────
 
 function marcarItem(idx, checado, manual = true) {
-    const linha         = document.getElementById(`linha-${idx}`);
-    const contadorItem  = document.getElementById(`cont-item-${idx}`);
+    const linha = document.getElementById(`linha-${idx}`);
+    const contadorItem = document.getElementById(`cont-item-${idx}`);
     if (!linha || !contadorItem) return;
 
     const totalDoItem = linha.querySelector('.col-qtd span').textContent.split('/')[1];
@@ -846,20 +858,32 @@ async function salvarTabelaEmArquivo() {
 
     linhas.forEach(linha => {
         if (!linha.querySelector('.estado-vazio')) {
+            // Pega o span do contador unitário
+            const spanContador = linha.querySelector('[id^="cont-item-"]');
+            // Extrai o valor atual (ex: o "1" de "1/2")
+            const valorAtual = spanContador ? parseInt(spanContador.getAttribute('data-atual')) : 0;
+
+            // Pega o valor total da quantidade (o que vem depois da barra)
+            const textoQtdCompleto = linha.querySelector('.col-qtd')?.innerText || '0 / 0';
+            const valorTotal = parseInt(textoQtdCompleto.split('/')[1]) || 1;
+
             const isChecked = linha.querySelector('input[type="checkbox"]')?.checked || false;
+
             totalItensLocal++;
             if (isChecked) conferidosLocal++;
+
             itensParaBanco.push({
-                locacao:   linha.querySelector('.col-locacao')?.innerText.trim() || '',
-                qtd:       linha.querySelector('.col-qtd')?.innerText.trim() || '0',
-                codigo:    linha.querySelector('.col-codigo')?.innerText.trim() || '',
+                locacao: linha.querySelector('.col-locacao')?.innerText.trim() || '',
+                qtd: valorTotal, // Salva apenas o número total (ex: 2)
+                valorAtual: valorAtual, // Salva o progresso (ex: 1)
+                codigo: linha.querySelector('.col-codigo')?.innerText.trim() || '',
                 descricao: linha.querySelector('.col-descricao')?.innerText.trim() || '',
                 conferido: isChecked
             });
         }
     });
 
-    const cab = cabecalhoAtual; // usa o objeto global — sempre correto
+    const cab = cabecalhoAtual;
     const numeroLimpo = cab.nRomaneio.replace(/\D/g, '') || Date.now().toString();
 
     let txt = `                       | REEMISSÃO |\n`;
@@ -875,29 +899,37 @@ async function salvarTabelaEmArquivo() {
 
     linhas.forEach(linha => {
         if (linha.querySelector('.estado-vazio')) return;
-        const loc   = (linha.querySelector('.col-locacao')?.innerText.trim() || '').padEnd(16);
-        const qtdRaw = (linha.querySelector('.col-qtd')?.innerText.trim() || '0').replace(',', '.');
-        const qtd   = parseFloat(qtdRaw).toFixed(2).replace('.', ',').padStart(5);
-        const cod   = (linha.querySelector('.col-codigo')?.innerText.trim() || '').padStart(6);
-        const desc  = linha.querySelector('.col-descricao')?.innerText.trim() || '';
+        const loc = (linha.querySelector('.col-locacao')?.innerText.trim() || '').padEnd(16);
+
+        // No TXT para impressão, pegamos o progresso atual para mostrar (ex: 1.00 ou 2.00)
+        const spanContador = linha.querySelector('[id^="cont-item-"]');
+        const vAtual = spanContador ? spanContador.getAttribute('data-atual') : "0";
+        const qtd = parseFloat(vAtual).toFixed(2).replace('.', ',').padStart(5);
+
+        const cod = (linha.querySelector('.col-codigo')?.innerText.trim() || '').padStart(6);
+        const desc = linha.querySelector('.col-descricao')?.innerText.trim() || '';
         const descF = (desc.length > 33 ? desc.substring(0, 30) + '...' : desc).padEnd(33);
-        const chk   = linha.querySelector('input[type="checkbox"]')?.checked ? '[X]' : '[ ]';
+
+        // No TXT impresso, só ganha [X] se estiver 100% conferido
+        const chk = linha.classList.contains('linha-conferida') ? '[X]' : '[ ]';
+
         txt += `| ${loc}  ${qtd}  ${cod}      ${descF}  ${chk.padStart(5)} |\n`;
         txt += `+------------------------------------------------------------------------------+\n`;
     });
+
     txt += `\n| SEPARADOR:                 AUTORIZANTE:                RECEBIDO:             | \n`;
     txt += `+------------------------------------------------------------------------------+ \n`;
 
     const dadosSalvar = {
-        id:           numeroLimpo,
-        nome:         `Romaneio ${numeroLimpo}`,
-        data:         new Date().toLocaleString('pt-BR'),
-        cliente:      cab.cliente,
-        total_itens:  totalItensLocal,
-        conferidos:   conferidosLocal,
-        itens:        itensParaBanco,
+        id: numeroLimpo,
+        nome: `Romaneio ${numeroLimpo}`,
+        data: new Date().toLocaleString('pt-BR'),
+        cliente: cab.cliente,
+        total_itens: totalItensLocal,
+        conferidos: conferidosLocal,
+        itens: itensParaBanco,
         txt_formatado: txt,
-        status:       (conferidosLocal === totalItensLocal && totalItensLocal > 0) ? 'FECHADO' : 'ABERTO'
+        status: (conferidosLocal === totalItensLocal && totalItensLocal > 0) ? 'FECHADO' : 'ABERTO'
     };
 
     try {
@@ -912,8 +944,8 @@ async function salvarTabelaEmArquivo() {
             const btnTxt = document.getElementById('botao-baixar-txt');
             if (btnTxt) {
                 btnTxt.style.display = 'inline-block';
-                btnTxt.dataset.id    = numeroLimpo;
-                btnTxt.dataset.nome  = `r${numeroLimpo}.txt`;
+                btnTxt.dataset.id = numeroLimpo;
+                btnTxt.dataset.nome = `r${numeroLimpo}.txt`;
             }
         } else {
             throw new Error('Erro ao salvar no servidor');
@@ -924,6 +956,7 @@ async function salvarTabelaEmArquivo() {
     }
 }
 
+
 function baixarTxt() {
     const linhas = document.querySelectorAll('#corpo-tabela tr');
     if (linhas.length === 0 || document.querySelector('.estado-vazio')) {
@@ -931,7 +964,7 @@ function baixarTxt() {
         return;
     }
 
-    const cab         = cabecalhoAtual;
+    const cab = cabecalhoAtual;
     const numeroLimpo = cab.nRomaneio.replace(/\D/g, '');
     const nomeArquivo = `r${numeroLimpo}.txt`;
 
@@ -947,12 +980,12 @@ function baixarTxt() {
 
     linhas.forEach(linha => {
         if (linha.querySelector('.estado-vazio')) return;
-        const loc   = (linha.querySelector('.col-locacao')?.innerText.trim() || '').padEnd(16);
-        const qtd   = (linha.querySelector('.col-qtd')?.innerText.trim() || '0').padStart(7);
-        const cod   = (linha.querySelector('.col-codigo')?.innerText.trim() || '').padStart(8);
-        const desc  = (linha.querySelector('.col-descricao')?.innerText.trim() || '');
+        const loc = (linha.querySelector('.col-locacao')?.innerText.trim() || '').padEnd(16);
+        const qtd = (linha.querySelector('.col-qtd')?.innerText.trim() || '0').padStart(7);
+        const cod = (linha.querySelector('.col-codigo')?.innerText.trim() || '').padStart(8);
+        const desc = (linha.querySelector('.col-descricao')?.innerText.trim() || '');
         const descF = (desc.length > 33 ? desc.substring(0, 30) + '...' : desc).padEnd(33);
-        const chk   = linha.querySelector('input[type="checkbox"]')?.checked ? '[X]' : '[ ]';
+        const chk = linha.querySelector('input[type="checkbox"]')?.checked ? '[X]' : '[ ]';
         txt += `| ${loc}  ${qtd}  ${cod}      ${descF}  ${chk.padStart(5)} |\n`;
         txt += `+------------------------------------------------------------------------------+\n`;
     });
@@ -961,18 +994,39 @@ function baixarTxt() {
 
     const blob = new Blob([txt], { type: 'text/plain;charset=utf-8' });
     const link = document.createElement('a');
-    link.href     = URL.createObjectURL(blob);
+    link.href = URL.createObjectURL(blob);
     link.download = nomeArquivo;
     link.click();
     URL.revokeObjectURL(link.href);
 }
 
-function abrirHistoricoRapido() {
-    const num = prompt('Digite o número do Romaneio (ex: 15404):');
-    if (num && num.trim() !== '') {
-        window.open(`http://localhost:3000/romaneio-txt/${num.replace(/\D/g, '')}`, '_blank');
+async function abrirHistoricoRapido() {
+    let num = prompt("Digite o número do Romaneio:");
+    if (!num) return;
+
+    // Remove QUALQUER coisa que não seja número (incluindo espaços e letras)
+    const numeroLimpo = num.replace(/\D/g, '').trim();
+
+    try {
+        // Usa template literal com crase `` para garantir a URL correta
+        const resposta = await fetch(`${window.location.origin}/romaneio/${numeroLimpo}`);
+
+        if (resposta.status === 404) {
+            alert(`O Romaneio ${numeroLimpo} não existe no banco.\nLembre-se de clicar em 'Salvar' no PC primeiro!`);
+            return;
+        }
+
+        const dados = await resposta.json();
+
+        // Aqui você chama a função que já corrigimos para montar a tabela
+        sincronizarComBanco(numeroLimpo);
+
+    } catch (err) {
+        console.error("Erro na requisição:", err);
+        alert("Erro ao conectar com o servidor.");
     }
 }
+
 
 function aplicarMudancaLocal(idx, valor, total) {
     const linha = document.getElementById(`linha-${idx}`);
