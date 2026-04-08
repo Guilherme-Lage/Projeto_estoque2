@@ -118,21 +118,26 @@ function processarTexto(texto) {
     atualizarContadorGeral();
 
     // Sincroniza abertura com o celular
-    const dadosParaSincronizar = {
+      const dadosParaSincronizar = {
         id: nRomaneio,
-        nome: `Romaneio ${nRomaneio}`,
-        data: dataHora,
-        cliente: cliente,
-        total_itens: totalItens,
         itens: itens,
-        cabecalho: { nRomaneio, dataHora, requisitante, contato, os, placa, cliente, modelo }
+        cabecalho: {
+            nRomaneio: nRomaneio,
+            dataHora: dataHora,
+            requisitante: requisitante,
+            contato: contato,
+            os: os,
+            placa: placa,
+            cliente: cliente,
+            modelo: modelo
+        }
     };
 
     fetch(`${window.location.origin}/definir-ativo`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(dadosParaSincronizar)
-    }).then(() => console.log("✅ Sincronizado com o celular!"));
+    });
 }
 
 
@@ -164,31 +169,36 @@ function marcarItem(idx, checado, manual = true) {
 
 // 2. O VIGIA: Faz o PC e o Celular "olharem" um para o outro
 setInterval(async () => {
-    const elementoInfo = document.getElementById('info-romaneio');
-    if (!elementoInfo || elementoInfo.style.display === 'none') return;
-
-    const idRomaneio = elementoInfo.textContent.replace(/\D/g, '');
-
     try {
-        const res = await fetch(`${window.location.origin}/status-checks/${idRomaneio}`);
-        const checksServidor = await res.json();
+        const res = await fetch(`${window.location.origin}/obter-ativo`);
+        const dados = await res.json();
+        
+        if (dados.id && dados.id !== ultimoIdSincronizado) {
+            ultimoIdSincronizado = dados.id;
 
-        // Aplica o que está no servidor na tela (sem disparar novo envio)
-        Object.keys(checksServidor).forEach(idCheck => {
-            const cb = document.getElementById(idCheck);
-            if (cb && cb.checked !== checksServidor[idCheck]) {
-                cb.checked = checksServidor[idCheck];
-                const idx = idCheck.split('-')[1];
-                marcarItem(idx, cb.checked, false); // false = não envia de volta
+            // Preenche o cabeçalho no Celular com os dados que vieram do PC
+            const cab = dados.cabecalho;
+            const painel = document.getElementById('painel-cabecalho');
+            if (cab && painel) {
+                painel.style.display = 'block';
+                painel.innerHTML = `
+                    <div class="cabecalho-topo">
+                        <span id="cab-num-romaneio">Romaneio Nº: ${cab.nRomaneio}</span>
+                        <span id="cab-data-romaneio">Data: ${cab.dataHora}</span>
+                    </div>
+                    <div class="cabecalho-corpo">
+                        <div class="cabecalho-item"><span>REQ:</span> <strong>${cab.requisitante}</strong></div>
+                        <div class="cabecalho-item"><span>PLACA:</span> <strong>${cab.placa}</strong></div>
+                        <div class="cabecalho-item item-full"><span>CLIENTE:</span> <strong>${cab.cliente}</strong></div>
+                        <div class="cabecalho-item item-full"><span>MODELO:</span> <strong>${cab.modelo}</strong></div>
+                    </div>
+                `;
             }
-        });
-    } catch (e) { /* Silencia erro de rede */ }
-}, 1500); // Checa a cada 1.5 segundos
-
-function atualizarContador() {
-    document.getElementById('contagem-conferidos').textContent = conferidos;
-    document.getElementById('contagem-total').textContent = totalItens;
-}
+            // Depois de arrumar o cabeçalho, ele baixa a tabela
+            sincronizarComBanco(dados.id);
+        }
+    } catch (e) { console.log("Sincronizando cabeçalho..."); }
+}, 2000);
 
 
 
@@ -240,6 +250,7 @@ async function filtrarTabela() {
 document.getElementById('busca-codigo').addEventListener('keydown', async function (e) {
     if (e.key === 'Enter') {
         e.preventDefault();
+         dispararBusca(this, this.value);
         const termoBusca = this.value.trim();
         if (termoBusca === "") return;
 
@@ -331,61 +342,60 @@ document.getElementById('busca-codigo').addEventListener('input', function () {
 // Função centralizada de busca — usada pelo Enter e pelo input do celular
 async function dispararBusca(input, termoBusca) {
     const linhas = document.querySelectorAll('#corpo-tabela tr');
+    const termo = termoBusca.trim();
+    if (!termo) return;
 
-    const marcarELimpar = (linha) => {
-        const cb = linha.querySelector('input[type="checkbox"]');
-        if (cb) {
-            cb.checked = true;
-            marcarItem(parseInt(cb.id.split('-')[1]), true);
-            input.value = '';
-            document.querySelectorAll('#corpo-tabela tr').forEach(tr => {
-                if (!tr.querySelector('.estado-vazio')) tr.style.display = '';
-            });
-            setTimeout(() => linha.scrollIntoView({ behavior: 'smooth', block: 'center' }), 100);
-            return true;
-        }
-        return false;
-    };
+    let linhaEncontrada = null;
+    let codigoReal = termo;
 
-    // Tentativa 1: busca direta na tabela
+    // 1. Tenta achar direto na tabela
     for (let linha of linhas) {
         const codTabela = linha.querySelector('.col-codigo')?.innerText.trim();
-        if (codTabela === termoBusca) {
-            marcarELimpar(linha);
-            return;
+        if (codTabela === termo) {
+            linhaEncontrada = linha;
+            break;
         }
     }
 
-    // Tentativa 2: busca pelo banco (EAN)
-    try {
-        const resposta = await fetch(`http://localhost:3000/buscar-produto/${termoBusca}`);
-        if (resposta.ok) {
-            const produto = await resposta.json();
-            const codigoReal = produto.ITEM_ESTOQUE_PUB.toString().trim();
-            let achou = false;
+    // 2. Se não achou, tenta traduzir o EAN pelo banco
+    if (!linhaEncontrada) {
+        try {
+            const res = await fetch(`${window.location.origin}/buscar-produto/${termo}`);
+            if (res.ok) {
+                const produtos = await res.json();
+                const prod = produtos[0]; // Pega o primeiro match
+                codigoReal = prod.ITEM_ESTOQUE_PUB.toString().trim();
 
-            for (let linha of linhas) {
-                const codTabela = linha.querySelector('.col-codigo')?.innerText.trim();
-                if (codTabela === codigoReal) {
-                    achou = marcarELimpar(linha);
-                    break;
+                for (let linha of linhas) {
+                    if (linha.querySelector('.col-codigo')?.innerText.trim() === codigoReal) {
+                        linhaEncontrada = linha;
+                        break;
+                    }
                 }
             }
+        } catch (e) { console.log("Erro banco"); }
+    }
 
-            if (!achou) {
-                alert(`Produto [${produto.DES_ITEM_ESTOQUE}] fora do romaneio!`);
-                input.value = '';
-                filtrarTabela();
-            }
-        } else {
-            alert('Código não encontrado!');
-            input.value = '';
-            filtrarTabela();
-        }
-    } catch (err) {
-        alert('Código não encontrado no romaneio!');
+    // 3. SE ACHOU A LINHA: Incrementa +1 (A Mágica)
+    if (linhaEncontrada) {
+        const idx = linhaEncontrada.id.replace('linha-', '');
+        const spanCont = document.getElementById(`cont-item-${idx}`);
+        const totalMax = parseInt(spanCont.parentElement.textContent.split('/')[1]);
+
+        // CHAMA A FUNÇÃO QUE VOCÊ JÁ TEM QUE MUDA AS CORES
+        incrementarItem(idx, totalMax);
+
+        // Limpa o campo para o próximo bipe
         input.value = '';
-        filtrarTabela();
+        
+        // Feedback visual: Scroll até a linha
+        linhaEncontrada.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        
+        if (navigator.vibrate) navigator.vibrate(100);
+    } else {
+        // Se não achou no romaneio
+        alert("Produto não está neste romaneio!");
+        input.value = '';
     }
 }
 
@@ -594,7 +604,6 @@ function atualizarContador() {
         elementoContador.style.borderColor = "#f39c12";
     }
 }
-
 function carregarDoHistorico(indice) {
     const dados = JSON.parse(localStorage.getItem('historico_hontec') || '[]');
     const romaneioSelecionado = dados[indice];
@@ -605,7 +614,8 @@ function carregarDoHistorico(indice) {
     }
 
     totalItens = romaneioSelecionado.total;
-    conferidos = romaneioSelecionado.concluidos;
+    // O contador de conferidos agora deve contar quantas linhas estão totalmente prontas
+    conferidos = romaneioSelecionado.produtos.filter(p => (p.conferido_qtd || 0) >= parseInt(p.qtd)).length;
 
     const elementoInfo = document.getElementById('info-romaneio');
     elementoInfo.style.display = 'block';
@@ -613,9 +623,7 @@ function carregarDoHistorico(indice) {
 
     document.getElementById('secao-contador').style.display = 'block';
     document.getElementById('botao-limpar').style.display = 'inline-block';
-    atualizarContador();
 
-    // 4. RESTAURANDO COM AS CAIXINHAS IDENTIFICADAS
     const painel = document.getElementById('painel-cabecalho');
     if (romaneioSelecionado.cabecalho && painel) {
         painel.style.display = 'block';
@@ -624,7 +632,7 @@ function carregarDoHistorico(indice) {
         painel.innerHTML = `
             <div class="cabecalho-topo">
                 <span id="cab-num-romaneio">${cab.nRomaneio}</span>
-                <span id="cab-data-romaneio"> ${cab.dataHora}</span>
+                <span id="cab-data-romaneio">${cab.dataHora}</span>
             </div>
             <div class="cabecalho-corpo" id="cabecalho-corpo">
                 <div class="cabecalho-item"><span>REQ:</span> <strong>${cab.requisitante}</strong></div>
@@ -635,8 +643,6 @@ function carregarDoHistorico(indice) {
                 <div class="cabecalho-item item-full"><span>MODELO:</span> <strong>${cab.modelo}</strong></div>
             </div>
         `;
-    } else if (painel) {
-        painel.style.display = 'none';
     }
 
     const corpoTabela = document.getElementById('corpo-tabela');
@@ -645,30 +651,43 @@ function carregarDoHistorico(indice) {
     romaneioSelecionado.produtos.forEach((item, idx) => {
         const tr = document.createElement('tr');
         tr.id = `linha-${idx}`;
+        const valorTotal = parseInt(item.qtd);
+        // Pega a quantidade já conferida se houver no histórico, senão assume 0
+        const valorAtual = item.conferido_qtd || (item.conferido ? valorTotal : 0);
+        
+        const classeDestaque = valorTotal > 1 ? 'qtd-multipla' : '';
 
-        const valorQtd = parseFloat(item.qtd);
-        const classeDestaque = valorQtd > 1 ? 'qtd-multipla' : '';
-
-        if (item.conferido) {
-            tr.classList.add('linha-conferida');
-        }
+        // Torna a linha clicável
+        tr.setAttribute('onclick', `incrementarItem(${idx}, ${valorTotal})`);
+        tr.style.cursor = 'pointer';
 
         tr.innerHTML = `
           <td class="col-locacao">${item.locacao}</td>
-          <td class="col-qtd"><span class="${classeDestaque}">${valorQtd.toFixed(0)}</span></td>
+          <td class="col-qtd">
+            <span class="${classeDestaque}">
+                <span id="cont-item-${idx}" data-atual="${valorAtual}">${valorAtual}</span> / ${valorTotal}
+            </span>
+          </td>
           <td class="col-codigo">${item.codigo}</td>
           <td class="col-descricao">${item.descricao}</td>
-          <td class="col-check">
-            <div class="caixa-selecao">
-              <input type="checkbox" id="chk-${idx}" ${item.conferido ? 'checked' : ''} onchange="marcarItem(${idx}, this.checked)">
-            </div>
+          <td class="col-check" style="text-align: center;">
+            <div id="status-quadrado-${idx}" class="quadrado-status"></div>
+            <input type="checkbox" id="chk-${idx}" ${valorAtual >= valorTotal ? 'checked' : ''} style="display:none">
           </td>
         `;
         corpoTabela.appendChild(tr);
+
+        // Aplica as cores e o ícone (!, V ou X) imediatamente
+        atualizarVisualItem(idx, valorAtual, valorTotal);
     });
 
+    atualizarContadorGeral();
     document.getElementById('secao-historico').style.display = 'none';
+    
+    // Se o filtro de ocultar estiver ligado, aplica ele agora
+    if (typeof filtrarTabela === "function") filtrarTabela();
 }
+
 
 function limparTabela() {
     try { salvarNoHistorico(); }
@@ -1098,4 +1117,30 @@ function aplicarMudancaLocal(idx, valor, total) {
     }
     
     atualizarContadorGeral();
+}
+
+function atualizarVisualItem(idx, atual, total) {
+    const quadrado = document.getElementById(`status-quadrado-${idx}`);
+    const linha = document.getElementById(`linha-${idx}`);
+    if (!quadrado || !linha) return;
+
+    quadrado.className = 'quadrado-status';
+    linha.classList.remove('linha-conferida', 'linha-pendente', 'linha-excesso');
+    quadrado.innerHTML = '';
+
+    if (atual === 0) {
+        quadrado.classList.add('status-vazio');
+    } else if (atual < total) {
+        quadrado.classList.add('status-pendente');
+        quadrado.innerHTML = '!';
+        linha.classList.add('linha-pendente');
+    } else if (atual === total) {
+        quadrado.classList.add('status-concluido');
+        quadrado.innerHTML = 'V';
+        linha.classList.add('linha-conferida');
+    } else {
+        quadrado.classList.add('status-erro');
+        quadrado.innerHTML = 'X';
+        linha.classList.add('linha-excesso');
+    }
 }

@@ -163,31 +163,36 @@ app.get('/copiar-romaneio', (req, res) => {
         }
     });
 });
-let romaneioAtivo = null;
+
 
 // 2. A rota que o CELULAR chama (O que deu erro 404)
-app.get('/obter-ativo', (req, res) => {
-    res.json({ id: romaneioAtivo });
-});
+let romaneioAtivo = null;
+let conferenciasAtivas = {}; 
 
-// 3. A rota que o PC chama para avisar que abriu um romaneio
 app.post('/definir-ativo', (req, res) => {
-    const { id, nome, data, cliente, total_itens, itens } = req.body;
-    
-    // Atualiza a variável para o celular saber qual é o novo ID
+    const { id, cabecalho, itens } = req.body;
     romaneioAtivo = id;
 
-    // Salva no banco para o celular conseguir baixar os itens depois
-    const sql = `INSERT OR REPLACE INTO romaneios 
-        (id, nome, data, cliente, total_itens, conferidos, itens_json, status) 
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?)`;
+    // Guarda tudo o que o PC enviou na memória de curto prazo
+    conferenciasAtivas[id] = {
+        cabecalho: cabecalho,
+        itens: itens,
+        estados: {} // Começa com os contadores zerados
+    };
 
-    db.run(sql, [id, nome, data, cliente, total_itens, 0, JSON.stringify(itens), 'ABERTO'], (err) => {
-        if (err) return res.status(500).json({ erro: err.message });
-        res.json({ mensagem: "Sincronizado!", id: romaneioAtivo });
+    console.log(`Romaneio ${id} pronto para sincronização.`);
+    res.json({ ok: true });
+});
+
+app.get('/obter-ativo', (req, res) => {
+    // Retorna o ID e o cabeçalho completo para o celular
+    if (!romaneioAtivo) return res.json({ id: null });
+    res.json({ 
+        id: romaneioAtivo, 
+        cabecalho: conferenciasAtivas[romaneioAtivo].cabecalho 
     });
 });
-let conferenciasAtivas = {}; // Agora vai guardar { id: { checks: {...}, cabecalho: {...} } }
+// Agora vai guardar { id: { checks: {...}, cabecalho: {...} } }
 
 app.post('/sincronizar-checks', (req, res) => {
     const { id, checks, cabecalho } = req.body;
