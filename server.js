@@ -40,6 +40,7 @@ db.serialize(() => {
         conferidos INTEGER,
         itens_json TEXT,
         txt_formatado TEXT,
+        cabecalho_json TEXT,
         status TEXT
     )`);
 
@@ -47,18 +48,20 @@ db.serialize(() => {
     db.run(`ALTER TABLE romaneios ADD COLUMN total_itens INTEGER`, () => {});
     db.run(`ALTER TABLE romaneios ADD COLUMN conferidos INTEGER`, () => {});
     db.run(`ALTER TABLE romaneios ADD COLUMN txt_formatado TEXT`, () => {});
+    db.run(`ALTER TABLE romaneios ADD COLUMN cabecalho_json TEXT`, () => {});
 });
 
 // --- ROTAS ---
 
 // 1. Salvar ou Atualizar Romaneio
 app.post('/salvar-romaneio', (req, res) => {
-    const { id, nome, data, cliente, total_itens, conferidos, itens, txt_formatado, status } = req.body;
+    const { id, nome, data, cliente, total_itens, conferidos, itens, txt_formatado, cabecalho, status } = req.body;
     const sql = `INSERT OR REPLACE INTO romaneios 
-        (id, nome, data, cliente, total_itens, conferidos, itens_json, txt_formatado, status) 
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+        (id, nome, data, cliente, total_itens, conferidos, itens_json, txt_formatado, cabecalho_json, status) 
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
     romaneioAtivo = null;
-    db.run(sql, [id, nome, data, cliente, total_itens, conferidos, JSON.stringify(itens), txt_formatado, status], function (err) {
+    const cabecalhoStr = cabecalho ? JSON.stringify(cabecalho) : null;
+    db.run(sql, [id, nome, data, cliente, total_itens, conferidos, JSON.stringify(itens), txt_formatado, cabecalhoStr, status], function (err) {
         if (err) return res.status(500).json({ erro: err.message });
         res.json({ mensagem: "Romaneio salvo com sucesso!" });
     });

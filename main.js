@@ -1,61 +1,61 @@
 let totalItens = 0;
-let conferidos = 0;
-let mostrarApenasPendentes = true;
-let modoSubtrair = false;
-let estadoFiltro = 0;
-// ─── ESTADO GLOBAL DO CABEÇALHO ──────────────────────────────────────────────
-// Guardamos o cabeçalho em um objeto global para não depender de querySelector frágil
-let cabecalhoAtual = {
-    nRomaneio: '---', dataHora: '---', requisitante: '---',
-    contato: '---', os: '---', placa: '---', cliente: '---', modelo: '---'
-};
+    let conferidos = 0;
+    let mostrarApenasPendentes = true;
+    let modoSubtrair = false;
+    let estadoFiltro = 0;
+    // ─── ESTADO GLOBAL DO CABEÇALHO ──────────────────────────────────────────────
+    // Guardamos o cabeçalho em um objeto global para não depender de querySelector frágil
+    let cabecalhoAtual = {
+        nRomaneio: '---', dataHora: '---', requisitante: '---',
+        contato: '---', os: '---', placa: '---', cliente: '---', modelo: '---'
+    };
 
-// ─── ESTADO GLOBAL DOS ITENS ──────────────────────────────────────────────────
-// Cada item: { locacao, qtd (total), codigo, descricao }
-let itensAtuais = [];
+    // ─── ESTADO GLOBAL DOS ITENS ──────────────────────────────────────────────────
+    // Cada item: { locacao, qtd (total), codigo, descricao }
+    let itensAtuais = [];
 
-// ID do romaneio aberto agora
-let romaneioIdAtivo = null;
+    // ID do romaneio aberto agora
+    let romaneioIdAtivo = null;
 
-// Controle de sincronização
-let ultimoIdSincronizado = null;
-let ultimoHashChecks = '';
-let enviandoCheck = false;
+    // Controle de sincronização
+    let ultimoIdSincronizado = null;
+    let ultimoHashChecks = '';
+    let enviandoCheck = false;
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Ajudantes
-// ─────────────────────────────────────────────────────────────────────────────
+    // ─────────────────────────────────────────────────────────────────────────────
+    // Ajudantes
+    // ─────────────────────────────────────────────────────────────────────────────
 
-function renderizarCabecalho(cab) {
-    cabecalhoAtual = cab;
-    const painel = document.getElementById('painel-cabecalho');
-    if (!painel) return;
-    painel.style.display = 'block';
-    painel.innerHTML = `
-        <div class="cabecalho-topo">
-            <span id="cab-num-romaneio">Romaneio Nº: ${cab.nRomaneio}</span>
-            <span id="cab-data-romaneio">Data: ${cab.dataHora}</span>
-        </div>
-        <div class="cabecalho-corpo" id="cabecalho-corpo">
-            <div class="cabecalho-item"><span>REQ:</span> <strong id="cab-req">${cab.requisitante}</strong></div>
-            <div class="cabecalho-item"><span>CONTATO:</span> <strong id="cab-contato">${cab.contato}</strong></div>
-            <div class="cabecalho-item"><span>OS:</span> <strong id="cab-os">${cab.os}</strong></div>
-            <div class="cabecalho-item"><span>PLACA:</span> <strong id="cab-placa">${cab.placa}</strong></div>
-            <div class="cabecalho-item item-full"><span>CLIENTE:</span> <strong id="cab-cliente">${cab.cliente}</strong></div>
-            <div class="cabecalho-item item-full"><span>MODELO:</span> <strong id="cab-modelo">${cab.modelo}</strong></div>
-        </div>
-    `;
-}
+    function renderizarCabecalho(cab) {
+        cabecalhoAtual = cab;
+        const painel = document.getElementById('painel-cabecalho');
+        if (!painel) return;
+        painel.style.display = 'block';
+        painel.innerHTML = `
+            <div class="cabecalho-topo">
+                <span id="cab-num-romaneio">Romaneio Nº: ${cab.nRomaneio}</span>
+                <span id="cab-data-romaneio">Data: ${cab.dataHora}</span>
+            </div>
+            <div class="cabecalho-corpo" id="cabecalho-corpo">
+                <div class="cabecalho-item"><span>REQ:</span> <strong id="cab-req">${cab.requisitante}</strong></div>
+                <div class="cabecalho-item"><span>CONTATO:</span> <strong id="cab-contato">${cab.contato}</strong></div>
+                <div class="cabecalho-item"><span>OS:</span> <strong id="cab-os">${cab.os}</strong></div>
+                <div class="cabecalho-item"><span>PLACA:</span> <strong id="cab-placa">${cab.placa}</strong></div>
+                <div class="cabecalho-item item-full"><span>CLIENTE:</span> <strong id="cab-cliente">${cab.cliente}</strong></div>
+                <div class="cabecalho-item item-full"><span>MODELO:</span> <strong id="cab-modelo">${cab.modelo}</strong></div>
+            </div>
+        `;
+    }
 
-// Lê os valores numéricos atuais de cada item da tabela
-function lerEstadoChecks() {
-    const estado = {};
-    itensAtuais.forEach((_, idx) => {
-        const span = document.getElementById(`cont-item-${idx}`);
-        estado[idx] = span ? parseInt(span.getAttribute('data-atual') || '0') : 0;
-    });
-    return estado;
-}
+    // Lê os valores numéricos atuais de cada item da tabela
+    function lerEstadoChecks() {
+        const estado = {};
+        itensAtuais.forEach((_, idx) => {
+            const span = document.getElementById(`cont-item-${idx}`);
+            estado[idx] = span ? parseInt(span.getAttribute('data-atual') || '0') : 0;
+        });
+        return estado;
+    }
 
 function hashChecks(estado) {
     return JSON.stringify(estado);
@@ -429,18 +429,35 @@ async function sincronizarComBanco(id) {
 
         if (!romaneio || !romaneio.itens_json) return;
 
-        const cabecalhoReal = romaneio.cabecalho_json ?
-            JSON.parse(romaneio.cabecalho_json) :
-            {
-                nRomaneio: id,
-                dataHora: romaneio.data || '---',
-                requisitante: romaneio.requisitante || '---',
-                contato: romaneio.contato || '---',
-                os: romaneio.os || '---',
-                placa: romaneio.placa || '---' ,
-                cliente: romaneio.cliente || '---',
-                modelo: romaneio.modelo || '---'
-            };
+        // Usa cabecalho_json salvo no banco (disponível após salvarTabelaEmArquivo)
+        // ou monta um parcial com o que o servidor tem em memória (/obter-ativo)
+        let cabecalhoReal;
+        if (romaneio.cabecalho_json) {
+            cabecalhoReal = JSON.parse(romaneio.cabecalho_json);
+        } else {
+            // Tenta pegar o cabeçalho completo que está na memória do servidor
+            try {
+                const resAtivo = await fetch(`${window.location.origin}/obter-ativo`);
+                const dadosAtivo = await resAtivo.json();
+                if (dadosAtivo.id == id && dadosAtivo.cabecalho) {
+                    cabecalhoReal = dadosAtivo.cabecalho;
+                } else {
+                    cabecalhoReal = {
+                        nRomaneio: id,
+                        dataHora: romaneio.data || '---',
+                        requisitante: '---', contato: '---', os: '---',
+                        placa: '---', cliente: romaneio.cliente || '---', modelo: '---'
+                    };
+                }
+            } catch (_) {
+                cabecalhoReal = {
+                    nRomaneio: id,
+                    dataHora: romaneio.data || '---',
+                    requisitante: '---', contato: '---', os: '---',
+                    placa: '---', cliente: romaneio.cliente || '---', modelo: '---'
+                };
+            }
+        }
 
         const registroParaHistorico = {
             nome: `Romaneio ${id}`,
@@ -626,67 +643,62 @@ document.getElementById('busca-codigo').addEventListener('input', function () {
     const ehEAN = /^\d{8,}$/.test(valor);
     if (ehEAN) dispararBusca(this, valor);
 });
-
 async function dispararBusca(input, termoBusca) {
     const linhas = document.querySelectorAll('#corpo-tabela tr');
     const termo = termoBusca.trim();
     if (!termo) return;
 
-    let candidatos = [];
+    let candidatosNoRomaneio = [];
 
-    // 1. Busca direta na tabela pelo código interno
-    for (let linha of linhas) {
-        if (linha.querySelector('.col-codigo')?.innerText.trim() === termo) {
-            candidatos.push({ elemento: linha });
-            break; // Se achou o código exato, não precisa ir no banco
+    try {
+        const res = await fetch(`${window.location.origin}/buscar-produto/${termo}`);
+        if (res.ok) {
+            const produtosDoBanco = await res.json();
+
+            // Cruza todos os resultados do banco com a sua tabela
+            produtosDoBanco.forEach(prod => {
+                const codInterno = prod.ITEM_ESTOQUE_PUB.toString().trim();
+                for (let linha of linhas) {
+                    const codTabela = linha.querySelector('.col-codigo')?.innerText.trim();
+                    if (codTabela === codInterno) {
+                        candidatosNoRomaneio.push({ elemento: linha, info: prod });
+                    }
+                }
+            });
+        }
+    } catch (e) { console.log('Buscando apenas local...'); }
+
+
+    if (candidatosNoRomaneio.length === 0) {
+        for (let linha of linhas) {
+            if (linha.querySelector('.col-codigo')?.innerText.trim() === termo) {
+                candidatosNoRomaneio.push({ elemento: linha });
+                break;
+            }
         }
     }
 
-    // 2. Se não achou o código exato, busca o EAN no Banco de Dados
-    if (candidatos.length === 0) {
-        try {
-            const res = await fetch(`${window.location.origin}/buscar-produto/${termo}`);
-            if (res.ok) {
-                const produtosDoBanco = await res.json(); // Recebe a LISTA de duplicados
-                
-                // Cruza os produtos do banco com o que está na tabela
-                produtosDoBanco.forEach(prod => {
-                    const codInterno = prod.ITEM_ESTOQUE_PUB.toString().trim();
-                    for (let linha of linhas) {
-                        if (linha.querySelector('.col-codigo')?.innerText.trim() === codInterno) {
-                            candidatos.push({ elemento: linha, info: prod });
-                        }
-                    }
-                });
-            }
-        } catch (e) { console.log('Erro ao consultar banco'); }
-    }
 
-    // --- LÓGICA DE DECISÃO ---
-
-    if (candidatos.length === 1) {
-        // CASO NORMAL: Apenas um item encontrado
-        processarLinhaEncontrada(candidatos[0].elemento, input);
+    if (candidatosNoRomaneio.length === 1) {
+        processarLinhaEncontrada(candidatosNoRomaneio[0].elemento, input);
     } 
-    else if (candidatos.length > 1) {
-        // CASO DUPLICADO: Abre menu de escolha
-        let msg = "⚠️ Código duplicado no romaneio! Escolha:\n\n";
-        candidatos.forEach((c, i) => {
+    else if (candidatosNoRomaneio.length > 1) {
+     
+        let msg = "⚠️ Código duplicado! Qual item você tem em mãos?\n\n";
+        candidatosNoRomaneio.forEach((c, i) => {
             const desc = c.info?.DES_ITEM_ESTOQUE || c.elemento.querySelector('.col-descricao').innerText;
             msg += `${i + 1} - ${desc}\n`;
         });
         
-        const escolha = prompt(msg + "\nDigite o número da opção:");
-        const selecao = candidatos[parseInt(escolha) - 1];
+        const escolha = prompt(msg + "\nDigite o número:");
+        const selecao = candidatosNoRomaneio[parseInt(escolha) - 1];
         
         if (selecao) {
             processarLinhaEncontrada(selecao.elemento, input);
         } else {
             input.value = '';
         }
-    } 
-    else {
-        // NÃO ACHOU EM LUGAR NENHUM
+    } else {
         alert('Produto não está neste romaneio!');
         input.value = '';
     }
@@ -710,7 +722,7 @@ function processarLinhaEncontrada(linha, input) {
 // VISIBILIDADE / ALTERNAR PENDENTES
 // ─────────────────────────────────────────────────────────────────────────────
 function alternarVisibilidade() {
-    // 1. Gira o estado (0 -> 1 -> 2 -> 0...)
+    
     estadoFiltro++;
     if (estadoFiltro > 2) estadoFiltro = 0;
 
@@ -737,7 +749,7 @@ function alternarVisibilidade() {
             break;
     }
 
-    // 3. CHAMA O FILTRO (A função que você me mandou acima)
+   
     filtrarTabela();
 }
 
@@ -945,6 +957,7 @@ function carregarDoHistorico(indice) {
 
     // Sincroniza com o celular — avisa que este romaneio está ativo agora
     if (rom.cabecalho && romaneioIdAtivo) {
+        // 1. Define o romaneio ativo (celular vai carregar a tabela)
         fetch(`${window.location.origin}/definir-ativo`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -954,6 +967,22 @@ function carregarDoHistorico(indice) {
                 itens: rom.produtos
             })
         }).catch(() => {});
+
+        // 2. Publica imediatamente o estado atual dos checks para o celular receber
+        //    (sem isso o celular carrega a tabela zerada mesmo que o PC já tenha marcações)
+        setTimeout(() => {
+            const checksAtuais = lerEstadoChecks();
+            ultimoHashChecks = hashChecks(checksAtuais);
+            fetch(`${window.location.origin}/sincronizar-checks`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    id: romaneioIdAtivo,
+                    checks: checksAtuais,
+                    cabecalho: rom.cabecalho
+                })
+            }).catch(() => {});
+        }, 100); // pequeno delay para garantir que a tabela já está no DOM
     }
 }
 
@@ -1157,6 +1186,7 @@ async function salvarTabelaEmArquivo() {
         conferidos: conferidosLocal,
         itens: itensParaBanco,
         txt_formatado: txt,
+        cabecalho: cab,
         status: (conferidosLocal === totalItensLocal && totalItensLocal > 0) ? 'FECHADO' : 'ABERTO'
     };
 
