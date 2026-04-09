@@ -1,557 +1,565 @@
 @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap');
 
-    * {
-        box-sizing: border-box;
-        margin: 0;
-        padding: 0;
-    }
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
 
+body {
+    font-family: 'IBM Plex Mono', monospace;
+    background: #f0ede8;
+    min-height: 100vh;
+    padding: 24px 16px;
+    color: #1a1a1a;
+}
+
+.container {
+    max-width: 680px;
+    margin: 0 auto;
+}
+
+h1 {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 2rem;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: #00009C;
+    margin-bottom: 20px;
+    text-align: center;
+}
+
+
+.linha-upload {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 8px;
+}
+
+.botao-padrao {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+    font-weight: 500;
+    padding: 10px 18px;
+    background: #fff;
+    border: 1.5px solid #1a1a1a;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background 0.15s;
+    white-space: nowrap;
+    color: #1a1a1a;
+    flex: 1;
+    min-width: 120px;
+
+}
+
+.botao-padrao:hover {
+    background: #00009C;
+    color: #fff;
+}
+
+
+.botao-perigo:hover {
+    background: #CC0000 !important;
+    border-color: #CC0000 !important;
+    color: #fff !important;
+}
+
+#entrada-arquivo {
+    display: none;
+}
+
+.legenda-upload {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+    color: #888;
+    display: block;
+}
+
+
+.secao-contador {
+    display: none;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+    margin-bottom: 14px;
+    padding: 10px 14px;
+    border: 1.5px solid #1a1a1a;
+    /* Borda padrão para combinar com a tabela */
+    border-radius: 4px;
+    transition: background 0.3s ease, color 0.3s ease;
+    /* Transição suave de cor */
+    font-weight: 600;
+}
+
+
+.secao-contador span {
+    font-weight: 600;
+    color: #1a1a1a;
+}
+
+#busca-codigo:hover {
+    background-color: #e3e1e1 !important;
+    color: black !important;
+}
+
+.envoltório-tabela {
+    background: #fff;
+    border: 2px solid #CC0000;
+    border-radius: 6px;
+    overflow: hidden;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+thead tr {
+    background: #CC0000;
+    color: #fff;
+}
+
+thead th {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 10px 12px;
+    text-align: left;
+}
+
+thead th:last-child {
+    text-align: center;
+}
+
+tbody tr {
+    border-bottom: 1px solid #e8e8e8;
+    transition: background 0.15s;
+}
+
+tbody tr:last-child {
+    border-bottom: none;
+}
+
+tbody tr:hover {
+    background: #f9f7f4;
+}
+
+
+tbody tr.linha-conferida {
+    background: #edf7f0;
+}
+
+tbody tr.linha-conferida td {
+    color: #2d7a4a;
+}
+
+td {
+    font-size: 13px;
+    padding: 11px 12px;
+    vertical-align: middle;
+}
+
+td.col-locacao {
+    font-family: 'IBM Plex Mono', monospace;
+    white-space: nowrap;
+}
+
+td.col-qtd {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+    font-weight: 500;
+    text-align: center;
+    white-space: nowrap;
+}
+
+td.col-codigo {
+    font-family: 'IBM Plex Mono', monospace;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+td.col-descricao {
+    font-size: 13px;
+    color: #333;
+}
+
+td.col-check {
+    text-align: center;
+    width: 50px;
+}
+
+
+.caixa-selecao {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.caixa-selecao input[type="checkbox"] {
+    width: 20px;
+    height: 20px;
+    border: 2px solid #bbb;
+    border-radius: 3px;
+    appearance: none;
+    -webkit-appearance: none;
+    cursor: pointer;
+    background: #fff;
+    transition: all 0.15s;
+    position: relative;
+}
+
+.caixa-selecao input[type="checkbox"]:checked {
+    background: #2d7a4a;
+    border-color: #2d7a4a;
+}
+
+.caixa-selecao input[type="checkbox"]:checked::after {
+    content: '';
+    position: absolute;
+    left: 4px;
+    top: 1px;
+    width: 8px;
+    height: 12px;
+    border: 2px solid #fff;
+    border-top: none;
+    border-left: none;
+    transform: rotate(45deg);
+}
+
+
+.estado-vazio {
+    padding: 48px 24px;
+    text-align: center;
+}
+
+.estado-vazio p {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+    color: #aaa;
+    letter-spacing: 0.06em;
+}
+
+.info-romaneio {
+    display: none;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    color: #888;
+    margin-bottom: 10px;
+    padding: 6px 2px;
+}
+
+
+@media (max-width: 600px) {
     body {
-        font-family: 'IBM Plex Mono', monospace;
-        background: #f0ede8;
-        min-height: 100vh;
-        padding: 24px 16px;
-        color: #1a1a1a;
+        padding: 16px 10px;
     }
 
-    .container {
-        max-width: 680px;
-        margin: 0 auto;
-    }
-
-    h1 {
-        font-family: 'IBM Plex Mono', monospace;
-        font-size: 2rem;
-        font-weight: 600;
-        letter-spacing: 0.12em;
-        text-transform: uppercase;
-        color: #00009C;
-        margin-bottom: 20px;
-        text-align: center;
-    }
-
-
-    .linha-upload {
-        display: flex;
-        flex-wrap: wrap;
-        align-items: center;
-        gap: 14px;
-        margin-bottom: 28px;
-    }
-
-    .botao-padrao {
-        font-family: 'IBM Plex Mono', monospace;
-        font-size: 12px;
-        font-weight: 500;
-        padding: 10px 18px;
-        background: #fff;
-        border: 1.5px solid #1a1a1a;
-        border-radius: 4px;
-        cursor: pointer;
-        transition: background 0.15s;
-        white-space: nowrap;
-        color: #1a1a1a;
-        flex: 1;
-        min-width: 120px;
-
-    }
-
-    .botao-padrao:hover {
-        background: #00009C;
-        color: #fff;
-    }
-
-
-    .botao-perigo:hover {
-        background: #CC0000 !important;
-        border-color: #CC0000 !important;
-        color: #fff !important;
-    }
-
-    #entrada-arquivo {
+    #copiarromaneio {
         display: none;
-    }
-
-    .legenda-upload {
-        font-family: 'IBM Plex Mono', monospace;
-        font-size: 12px;
-        color: #888;
-        display: block;
-    }
-
-
-    .secao-contador {
-        display: none;
-        font-family: 'IBM Plex Mono', monospace;
-        font-size: 12px;
-        margin-bottom: 14px;
-        padding: 10px 14px;
-        border: 1.5px solid #1a1a1a;
-        /* Borda padrão para combinar com a tabela */
-        border-radius: 4px;
-        transition: background 0.3s ease, color 0.3s ease;
-        /* Transição suave de cor */
-        font-weight: 600;
-    }
-
-
-    .secao-contador span {
-        font-weight: 600;
-        color: #1a1a1a;
-    }
-
-    #busca-codigo:hover {
-        background-color: #e3e1e1 !important;
-        color: black !important;
-    }
-
-    .envoltório-tabela {
-        background: #fff;
-        border: 2px solid #CC0000;
-        border-radius: 6px;
-        overflow: hidden;
-    }
-
-    table {
-        width: 100%;
-        border-collapse: collapse;
-    }
-
-    thead tr {
-        background: #CC0000;
-        color: #fff;
-    }
-
-    thead th {
-        font-family: 'IBM Plex Mono', monospace;
-        font-size: 11px;
-        font-weight: 500;
-        letter-spacing: 0.08em;
-        text-transform: uppercase;
-        padding: 10px 12px;
-        text-align: left;
-    }
-
-    thead th:last-child {
-        text-align: center;
-    }
-
-    tbody tr {
-        border-bottom: 1px solid #e8e8e8;
-        transition: background 0.15s;
-    }
-
-    tbody tr:last-child {
-        border-bottom: none;
-    }
-
-    tbody tr:hover {
-        background: #f9f7f4;
-    }
-
-
-    tbody tr.linha-conferida {
-        background: #edf7f0;
-    }
-
-    tbody tr.linha-conferida td {
-        color: #2d7a4a;
-    }
-
-    td {
-        font-size: 13px;
-        padding: 11px 12px;
-        vertical-align: middle;
-    }
-
-    td.col-locacao {
-        font-family: 'IBM Plex Mono', monospace;
-        white-space: nowrap;
-    }
-
-    td.col-qtd {
-        font-family: 'IBM Plex Mono', monospace;
-        font-size: 12px;
-        font-weight: 500;
-        text-align: center;
-        white-space: nowrap;
-    }
-
-    td.col-codigo {
-        font-family: 'IBM Plex Mono', monospace;
-        font-weight: 600;
-        white-space: nowrap;
-    }
-
-    td.col-descricao {
-        font-size: 13px;
-        color: #333;
-    }
-
-    td.col-check {
-        text-align: center;
-        width: 50px;
-    }
-
-
-    .caixa-selecao {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-    }
-
-    .caixa-selecao input[type="checkbox"] {
-        width: 20px;
-        height: 20px;
-        border: 2px solid #bbb;
-        border-radius: 3px;
-        appearance: none;
-        -webkit-appearance: none;
-        cursor: pointer;
-        background: #fff;
-        transition: all 0.15s;
-        position: relative;
-    }
-
-    .caixa-selecao input[type="checkbox"]:checked {
-        background: #2d7a4a;
-        border-color: #2d7a4a;
-    }
-
-    .caixa-selecao input[type="checkbox"]:checked::after {
-        content: '';
-        position: absolute;
-        left: 4px;
-        top: 1px;
-        width: 8px;
-        height: 12px;
-        border: 2px solid #fff;
-        border-top: none;
-        border-left: none;
-        transform: rotate(45deg);
-    }
-
-
-    .estado-vazio {
-        padding: 48px 24px;
-        text-align: center;
-    }
-
-    .estado-vazio p {
-        font-family: 'IBM Plex Mono', monospace;
-        font-size: 12px;
-        color: #aaa;
-        letter-spacing: 0.06em;
-    }
-
-    .info-romaneio {
-        display: none;
-        font-family: 'IBM Plex Mono', monospace;
-        font-size: 11px;
-        color: #888;
-        margin-bottom: 10px;
-        padding: 6px 2px;
-    }
-
-
-    @media (max-width: 600px) {
-        body {
-            padding: 16px 10px;
-        }
-         
-       #copiarromaneio{
-        display: none;
-       }
-        
-        #contagem-conferidos {
-            margin-left: 1%;
-            padding-left: 0%;
-        }
-
-        .linha-upload {
-            flex-direction: column;
-            align-items: stretch;
-            gap: 10px;
-        }
-
-        .botao-padrao {
-            width: 100%;
-            text-align: center;
-            padding: 14px;
-        }
-
-        thead {
-            display: none;
-        }
-
-        /* ── LAYOUT MOBILE: 2 linhas ───────────────────────────────
-           Linha 1: [Local]  [Qtd]  [Status]
-           Linha 2: [Código — Descrição]
-        ─────────────────────────────────────────────────────────── */
-        tbody tr {
-            display: grid;
-            grid-template-columns: 1fr auto auto;
-            grid-template-areas:
-                "locacao qtd check"
-                "info   info info";
-            padding: 10px 12px;
-            border-bottom: 2px solid #1a1a1a;
-            gap: 10px 10px;
-            align-items: center;
-            height: 11vh;
-        }
-
-        td {
-            display: block;
-            padding: 0 !important;
-            border: none !important;
-        }
-
-        td.col-locacao {
-            grid-area: locacao;
-            font-size: 14px; 
-             font-weight: 600;
-            align-self: center;
-        }
-
-        td.col-locacao::before {
-            content: "Local: ";
-            font-weight: bold;
-        }
-
-        td.col-qtd {
-            grid-area: qtd;
-            text-align: center;
-            font-size: 15px;
-            font-weight: 700;
-            align-self: center;
-        }
-
-        td.col-qtd::before {
-            content: none;
-        }
-
-        td.col-check {
-            grid-area: check;
-            text-align: right;
-            align-self: center;
-            margin-left: 0;
-        }
-
-        /* Linha 2: código + descrição lado a lado */
-        td.col-codigo {
-            grid-area: info;
-            display: inline;
-            font-size: 12px;
-            font-weight: 700;
-        }
-
-        td.col-descricao {
-            grid-area: info;
-            display: inline;
-            font-size: 13px;
-            font-weight: 500;
-            margin: 0;
-            text-align: right;
-        }
-
-        /* Junta código e descrição na mesma célula visual */
-        td.col-codigo::after {
-            content: " — ";
-            color: #bbb;
-            font-weight: 400;
-        }
-    }
-
-    .envoltório-tabela {
-        min-height: 200px;
-        background: #fff;
-        border: 2px solid #1a1a1a;
-        border-radius: 6px;
-    }
-
-    table {
-        width: 100%;
-        border-collapse: collapse;
-        table-layout: fixed;
-    }
-
-    /* Locação */
-    th:nth-child(1) {
-        width: 15%;
-    }
-
-    /* Qtd */
-    th:nth-child(2) {
-        width: 12%;
-    }
-
-    /* Código */
-    th:nth-child(3) {
-        width: 15%;
-    }
-
-
-    /* Descrição */
-    th:nth-child(4) {
-        width: 40%;
-    }
-
-    /* Botões */
-    th:nth-child(5) {
-        width: 18%;
-    }
-
-    .qtd-multipla {
-        font-weight: 800 !important;
-        padding: 2px 6px;
-        display: inline-block;
-        animation: pulse 2s infinite;
-    }
-
-    .botao-colar {
-        background: #2d7a4a !important;
-        /* Verde para indicar ação positiva/rápida */
-        color: #fff !important;
-        border-color: #2d7a4a !important;
-    }
-
-    .botao-colar:hover {
-        background: #1e5c35 !important;
-        border-color: #1e5c35 !important;
-    }
-
-    .painel-cabecalho {
-        background: #fff;
-        border: 2px solid #1a1a1a;
-        border-radius: 6px;
-        overflow: hidden;
-        margin-bottom: 20px;
-        font-family: 'IBM Plex Mono', monospace;
-        width: 100%;
-        /* Força a largura total da div pai */
-        display: none;
-
-    }
-
-    .cabecalho-corpo {
-        padding: 16px;
-        display: flex;
-        /* Mudamos de grid para flex para melhor controle */
-        flex-wrap: wrap;
-        /* Permite que os itens pulem de linha se não couberem */
-        gap: 12px 24px;
-        /* Espaçamento entre linhas e colunas */
-        font-size: 13px;
-    }
-
-    .cabecalho-topo {
-        background: #CC0000;
-        /* Azul igual ao seu H1 */
-        color: #fff;
-        padding: 8px 12px;
-        font-size: 11px;
-        font-weight: 600;
-        text-transform: uppercase;
-        letter-spacing: 0.08em;
-        display: flex;
-        justify-content: space-between;
-    }
-
-    .cabecalho-item {
-        border-bottom: 1px solid #eee;
-        padding-bottom: 4px;
-        min-width: 150px;
-        /* Garante que os itens pequenos não sumam */
-        flex: 1 1 auto;
-        /* Deixa os itens crescerem para ocupar o espaço */
-    }
-
-    /* Força Cliente e Modelo a ocuparem a linha inteira sempre */
-    .item-full {
-        flex: 1 1 100% !important;
-        border-bottom: 1px solid #eee;
-    }
-
-    .cabecalho-item span {
-        color: #888;
-        font-size: 11px;
-        margin-right: 8px;
     }
 
     #contagem-conferidos {
-        margin-left: 16%;
+        margin-left: 1%;
+        padding-left: 0%;
     }
 
-    /* Quadrado base */
-    .quadrado-status {
-        width: 24px;
-        height: 24px;
-        border: 2px solid #1a1a1a;
-        border-radius: 4px;
-        display: inline-flex;
+    .linha-upload {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 10px;
+    }
+
+    .botao-padrao {
+        width: 100%;
+        text-align: center;
+        padding: 14px;
+    }
+
+    thead {
+        display: none;
+    }
+
+    /* ── LAYOUT MOBILE: 2 linhas ───────────────────────────────
+           Linha 1: [Local]  [Qtd]  [Status]
+           Linha 2: [Código — Descrição]
+        ─────────────────────────────────────────────────────────── */
+    tbody tr {
+        display: grid;
+        grid-template-columns: 1fr auto auto;
+        grid-template-areas:
+            "locacao qtd check"
+            "info   info info";
+        padding: 10px 12px;
+        border-bottom: 2px solid #1a1a1a;
+        gap: 10px 10px;
         align-items: center;
-        justify-content: center;
-        font-weight: bold;
-        font-size: 16px;
-        transition: all 0.2s;
+        height: 11vh;
     }
 
-    /* Estado 0: Branco */
-    .status-vazio {
-        background: #fff;
+    td {
+        display: block;
+        padding: 0 !important;
+        border: none !important;
     }
 
-    /* Estado Intermediário: Amarelo com ! */
-    .status-pendente {
-        background: #ffeb3b;
-        border-color: #fbc02d;
-        color: #000;
+    td.col-locacao {
+        grid-area: locacao;
+        font-size: 14px;
+        font-weight: 600;
+        align-self: center;
     }
 
-    /* Estado Final: Verde com ✓ */
-    .status-concluido {
-        background: #2d7a4a;
-        border-color: #2d7a4a;
-        color: #fff;
-    }
-
-    /* Impede que o clique no quadrado selecione texto */
-    tr {
-        user-select: none;
-    }
-    .status-erro {
-        background: #CC0000;
-        border-color: #990000;
-        color: #fff;
-    }
-
-    /* Opcional: Deixar a linha levemente avermelhada para destacar o erro */
-    .linha-excesso {
-        background: #fff0f0 !important;
-    }
-
-    .linha-excesso td {
-        color: #CC0000;
+    td.col-locacao::before {
+        content: "Local: ";
         font-weight: bold;
     }
-    /* Linha em andamento (Amarelo claro) */
-    .linha-pendente {
-        background-color: #fff9c4 !important; /* Amarelo bem clarinho */
+
+    td.col-qtd {
+        grid-area: qtd;
+        text-align: center;
+        font-size: 15px;
+        font-weight: 700;
+        align-self: center;
     }
 
-    /* Linha concluída (Verde claro) */
-    .linha-conferida {
-        background-color: #edf7f0 !important;
+    td.col-qtd::before {
+        content: none;
     }
 
-    /* Linha com excesso (Vermelho claro) */
-    .linha-excesso {
-        background-color: #ffebee !important;
+    td.col-check {
+        grid-area: check;
+        text-align: right;
+        align-self: center;
+        margin-left: 0;
     }
 
-    /* Garantir que o texto mude de cor no erro */
-    .linha-excesso td.col-qtd span {
-        color: #CC0000;
-        font-weight: bold;
+    /* Linha 2: código + descrição lado a lado */
+    td.col-codigo {
+        grid-area: info;
+        display: inline;
+        font-size: 12px;
+        font-weight: 700;
     }
+
+    td.col-descricao {
+        grid-area: info;
+        display: inline;
+        font-size: 13px;
+        font-weight: 500;
+        margin: 0;
+        text-align: right;
+    }
+
+    /* Junta código e descrição na mesma célula visual */
+    td.col-codigo::after {
+        content: " — ";
+        color: #bbb;
+        font-weight: 400;
+    }
+}
+
+.envoltório-tabela {
+    min-height: 200px;
+    background: #fff;
+    border: 2px solid #1a1a1a;
+    border-radius: 6px;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    table-layout: fixed;
+}
+
+/* Locação */
+th:nth-child(1) {
+    width: 15%;
+}
+
+/* Qtd */
+th:nth-child(2) {
+    width: 12%;
+}
+
+/* Código */
+th:nth-child(3) {
+    width: 15%;
+}
+
+
+/* Descrição */
+th:nth-child(4) {
+    width: 40%;
+}
+
+/* Botões */
+th:nth-child(5) {
+    width: 18%;
+}
+
+.qtd-multipla {
+    font-weight: 800 !important;
+    padding: 2px 6px;
+    display: inline-block;
+    animation: pulse 2s infinite;
+}
+
+.botao-colar {
+    background: #2d7a4a !important;
+    /* Verde para indicar ação positiva/rápida */
+    color: #fff !important;
+    border-color: #2d7a4a !important;
+}
+
+.botao-colar:hover {
+    background: #1e5c35 !important;
+    border-color: #1e5c35 !important;
+}
+
+.painel-cabecalho {
+    background: #fff;
+    border: 2px solid #1a1a1a;
+    border-radius: 6px;
+    overflow: hidden;
+    margin-bottom: 20px;
+    font-family: 'IBM Plex Mono', monospace;
+    width: 100%;
+    /* Força a largura total da div pai */
+    display: none;
+
+}
+
+.cabecalho-corpo {
+    padding: 16px;
+    display: flex;
+    /* Mudamos de grid para flex para melhor controle */
+    flex-wrap: wrap;
+    /* Permite que os itens pulem de linha se não couberem */
+    gap: 12px 24px;
+    /* Espaçamento entre linhas e colunas */
+    font-size: 13px;
+}
+
+.cabecalho-topo {
+    background: #CC0000;
+    /* Azul igual ao seu H1 */
+    color: #fff;
+    padding: 8px 12px;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    display: flex;
+    justify-content: space-between;
+}
+
+.cabecalho-item {
+    border-bottom: 1px solid #eee;
+    padding-bottom: 4px;
+    min-width: 150px;
+    /* Garante que os itens pequenos não sumam */
+    flex: 1 1 auto;
+    /* Deixa os itens crescerem para ocupar o espaço */
+}
+
+/* Força Cliente e Modelo a ocuparem a linha inteira sempre */
+.item-full {
+    flex: 1 1 100% !important;
+    border-bottom: 1px solid #eee;
+}
+
+.cabecalho-item span {
+    color: #888;
+    font-size: 11px;
+    margin-right: 8px;
+}
+
+#contagem-conferidos {
+    margin-left: 16%;
+}
+
+/* Quadrado base */
+.quadrado-status {
+    width: 24px;
+    height: 24px;
+    border: 2px solid #1a1a1a;
+    border-radius: 4px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    font-size: 16px;
+    transition: all 0.2s;
+}
+
+/* Estado 0: Branco */
+.status-vazio {
+    background: #fff;
+}
+
+/* Estado Intermediário: Amarelo com ! */
+.status-pendente {
+    background: #ffeb3b;
+    border-color: #fbc02d;
+    color: #000;
+}
+
+/* Estado Final: Verde com ✓ */
+.status-concluido {
+    background: #2d7a4a;
+    border-color: #2d7a4a;
+    color: #fff;
+}
+
+/* Impede que o clique no quadrado selecione texto */
+tr {
+    user-select: none;
+}
+
+.status-erro {
+    background: #CC0000;
+    border-color: #990000;
+    color: #fff;
+}
+
+/* Opcional: Deixar a linha levemente avermelhada para destacar o erro */
+.linha-excesso {
+    background: #fff0f0 !important;
+}
+
+.linha-excesso td {
+    color: #CC0000;
+    font-weight: bold;
+}
+
+/* Linha em andamento (Amarelo claro) */
+.linha-pendente {
+    background-color: #fff9c4 !important;
+    /* Amarelo bem clarinho */
+}
+
+/* Linha concluída (Verde claro) */
+.linha-conferida {
+    background-color: #edf7f0 !important;
+}
+
+/* Linha com excesso (Vermelho claro) */
+.linha-excesso {
+    background-color: #ffebee !important;
+}
+
+/* Garantir que o texto mude de cor no erro */
+.linha-excesso td.col-qtd span {
+    color: #CC0000;
+    font-weight: bold;
+}
+
+#btn-ocultar {
+    margin-bottom: 2%;
+    width: 100%;
+}

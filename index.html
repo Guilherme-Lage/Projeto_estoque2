@@ -34,26 +34,20 @@
             </button>
             <input type="file" id="entrada-arquivo" accept=".txt,.html" onchange="carregarArquivo(this)">
             <span class="legenda-upload" id="legenda-arquivo">Insira o .txt do Apollo</span>
-            <button id="btn-ocultar" class="botao-padrao" onclick="alternarVisibilidade()">
-                Mostrar Todos
-            </button>
+
         </div>
 
-
+        <button id="btn-ocultar" class="botao-padrao" onclick="alternarVisibilidade()">
+            Mostrar Todos
+        </button>
         <div class="info-romaneio" id="info-romaneio"></div>
 
-
-
         <div id="painel-cabecalho" class="painel-cabecalho">
-            <!-- O JS vai preencher aqui -->
+       
         </div>
         <div class="linha-upload" style="flex-wrap: wrap;">
             <input type="text" id="busca-codigo" placeholder="Digite o código ou peça..." onkeyup="filtrarTabela()"
                 class="botao-padrao" style="flex: 1; text-align: left;">
-
-
-
-
             <div class="envoltório-tabela">
                 <table>
                     <thead>

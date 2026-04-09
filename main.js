@@ -3,21 +3,14 @@ let totalItens = 0;
     let mostrarApenasPendentes = true;
     let modoSubtrair = false;
     let estadoFiltro = 0;
-    // ─── ESTADO GLOBAL DO CABEÇALHO ──────────────────────────────────────────────
-    // Guardamos o cabeçalho em um objeto global para não depender de querySelector frágil
+    
     let cabecalhoAtual = {
         nRomaneio: '---', dataHora: '---', requisitante: '---',
         contato: '---', os: '---', placa: '---', cliente: '---', modelo: '---'
     };
-
-    // ─── ESTADO GLOBAL DOS ITENS ──────────────────────────────────────────────────
-    // Cada item: { locacao, qtd (total), codigo, descricao }
     let itensAtuais = [];
-
-    // ID do romaneio aberto agora
     let romaneioIdAtivo = null;
 
-    // Controle de sincronização
     let ultimoIdSincronizado = null;
     let ultimoHashChecks = '';
     let enviandoCheck = false;
@@ -47,7 +40,7 @@ let totalItens = 0;
         `;
     }
 
-    // Lê os valores numéricos atuais de cada item da tabela
+   
     function lerEstadoChecks() {
         const estado = {};
         itensAtuais.forEach((_, idx) => {
@@ -128,8 +121,7 @@ function processarTexto(texto) {
         const valorQtdTotal = parseInt(item.qtd);
         const classeDestaque = valorQtdTotal > 1 ? 'qtd-multipla' : '';
 
-        // Simplificado: Apenas o clique que chama a função principal
-        // A função incrementarItem agora decide sozinha se soma ou subtrai
+    
         tr.addEventListener('click', () => {
             incrementarItem(idx, valorQtdTotal);
         });
@@ -223,7 +215,7 @@ function incrementarItem(idx, totalMaximo) {
     }
 
     atualizarContadorGeral();
-    sincronizarClique(); // Avisa servidor — agora sem parâmetros, lê o estado global
+    sincronizarClique();
 }
 
 function atualizarVisualItem(idx, atual, total) {
@@ -235,8 +227,8 @@ function atualizarVisualItem(idx, atual, total) {
     linha.classList.remove('linha-conferida', 'linha-pendente', 'linha-excesso');
     quadrado.innerHTML = '';
     if (atual > 0 && atual < total) {
-        quadrado.classList.add('status-pendente'); // Amarelo
-        linha.classList.add('linha-pendente');     // Fundo Amarelo
+        quadrado.classList.add('status-pendente'); 
+        linha.classList.add('linha-pendente');     
         quadrado.innerHTML = '!';
     }
     if (atual === 0) {
@@ -261,13 +253,13 @@ function atualizarVisualItem(idx, atual, total) {
 // ─────────────────────────────────────────────────────────────────────────────
 
 function sincronizarClique() {
-    // Usa o ID global — não depende mais de querySelector frágil no cabeçalho
+  
     const id = romaneioIdAtivo;
     if (!id || id === '---') return;
 
     const estado = lerEstadoChecks();
     const novoHash = hashChecks(estado);
-    if (novoHash === ultimoHashChecks) return; // Nada mudou, não envia
+    if (novoHash === ultimoHashChecks) return; 
     ultimoHashChecks = novoHash;
 
     fetch(`${window.location.origin}/sincronizar-checks`, {
@@ -279,7 +271,7 @@ function sincronizarClique() {
 
 // ─────────────────────────────────────────────────────────────────────────────
 // SINCRONIZAÇÃO — RECEBIMENTO (Servidor → PC/Celular)
-// Polling a cada 1,5s lê o estado do servidor e aplica localmente
+// espera a cada 1,5s lê o estado do servidor e aplica localmente
 // ─────────────────────────────────────────────────────────────────────────────
 
 setInterval(async () => {
@@ -553,7 +545,6 @@ document.getElementById('busca-codigo').addEventListener('keydown', async functi
     const marcarELimpar = (linha) => {
         const idx = linha.id.replace('linha-', '');
         const spanCont = document.getElementById(`cont-item-${idx}`);
-        // Pega o total da quantidade (ex: o 4 do "0 / 4")
         const textoQtd = spanCont?.parentElement?.textContent || "0 / 1";
         const totalMax = parseInt(textoQtd.split('/')[1]) || 1;
 
@@ -619,7 +610,7 @@ document.getElementById('busca-codigo').addEventListener('keydown', async functi
                 if (typeof filtrarTabela === 'function') filtrarTabela();
             }
         } else {
-            alert('Código não cadastrado no sistema!');
+            alert('Código não cadastrado no sistema!\nFavor verificar o cadastro!!');
             this.value = '';
         }
     } catch (err) {
@@ -655,7 +646,6 @@ async function dispararBusca(input, termoBusca) {
         if (res.ok) {
             const produtosDoBanco = await res.json();
 
-            // Cruza todos os resultados do banco com a sua tabela
             produtosDoBanco.forEach(prod => {
                 const codInterno = prod.ITEM_ESTOQUE_PUB.toString().trim();
                 for (let linha of linhas) {
@@ -704,11 +694,11 @@ async function dispararBusca(input, termoBusca) {
     }
 }
 
-// Função auxiliar para marcar e dar scroll
+
 function processarLinhaEncontrada(linha, input) {
     const idx = linha.id.replace('linha-', '');
     const spanCont = document.getElementById(`cont-item-${idx}`);
-    // Pega o total da quantidade (ex: o 4 do "0 / 4")
+
     const totalMax = parseInt(spanCont.parentElement.textContent.split('/')[1]);
     
     incrementarItem(idx, totalMax);
@@ -729,7 +719,6 @@ function alternarVisibilidade() {
     const btn = document.getElementById('btn-ocultar');
     if (!btn) return;
 
-    // 2. Muda o visual do botão para confirmar o clique
     switch (estadoFiltro) {
         case 0:
             btn.textContent = "Ocultar Conferidos";
@@ -804,7 +793,6 @@ function salvarNoHistorico() {
     const nomeRomaneio = (elementoInfo && elementoInfo.textContent) ? elementoInfo.textContent : "Documento Avulso";
     const dataHoraRegistro = new Date().toLocaleString('pt-BR');
 
-    // 1. CAPTURA OS ITENS DA TABELA COM A QUANTIDADE PARCIAL
     const itensAtuaisParaHistorico = [];
     const linhas = document.querySelectorAll('#corpo-tabela tr');
 
@@ -827,7 +815,6 @@ function salvarNoHistorico() {
         });
     });
 
-    // 2. CAPTURA OS DADOS DO CABEÇALHO (Objeto Global ou DOM)
     const dadosCabecalho = cabecalhoAtual || null; 
 
     const registroNovo = {
@@ -841,14 +828,13 @@ function salvarNoHistorico() {
 
     let historico = JSON.parse(localStorage.getItem('historico_hontec') || '[]');
 
-    // Evita duplicar o mesmo romaneio se ele for o último da lista
+
     if (historico.length > 0 && historico[0].nome === nomeRomaneio) {
         historico.shift();
     }
 
     historico.unshift(registroNovo);
 
-    // Mantém apenas os últimos 8 romaneios
     if (historico.length > 8) {
         historico = historico.slice(0, 8);
     }
@@ -902,9 +888,8 @@ function carregarDoHistorico(indice) {
         return;
     }
 
-    // Padronização dos dados para garantir que o contador geral funcione
     totalItens = rom.total;
-    // Verifica se o item atingiu o total usando o campo valorAtual
+
     conferidos = rom.produtos.filter(p => (p.valorAtual || 0) >= parseInt(p.qtd)).length;
     itensAtuais = rom.produtos;
     romaneioIdAtivo = rom.cabecalho?.nRomaneio || null;
@@ -924,7 +909,7 @@ function carregarDoHistorico(indice) {
         tr.id = `linha-${idx}`;
         
         const valorTotal = parseInt(item.qtd);
-        // Recupera o valorAtual salvo. Se não existir (romaneio antigo), usa a lógica do check.
+
         const valorAtual = item.valorAtual !== undefined ? item.valorAtual : (item.conferido ? valorTotal : 0);
         
         const classeDestaque = valorTotal > 1 ? 'qtd-multipla' : '';
@@ -947,7 +932,7 @@ function carregarDoHistorico(indice) {
         `;
         corpoTabela.appendChild(tr);
         
-        // Esta função vai garantir que o amarelo apareça se o valor for (1 / 2)
+    
         atualizarVisualItem(idx, valorAtual, valorTotal);
     });
 
@@ -955,9 +940,8 @@ function carregarDoHistorico(indice) {
     document.getElementById('secao-historico').style.display = 'none';
     if (typeof filtrarTabela === 'function') filtrarTabela();
 
-    // Sincroniza com o celular — avisa que este romaneio está ativo agora
     if (rom.cabecalho && romaneioIdAtivo) {
-        // 1. Define o romaneio ativo (celular vai carregar a tabela)
+
         fetch(`${window.location.origin}/definir-ativo`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -968,8 +952,6 @@ function carregarDoHistorico(indice) {
             })
         }).catch(() => {});
 
-        // 2. Publica imediatamente o estado atual dos checks para o celular receber
-        //    (sem isso o celular carrega a tabela zerada mesmo que o PC já tenha marcações)
         setTimeout(() => {
             const checksAtuais = lerEstadoChecks();
             ultimoHashChecks = hashChecks(checksAtuais);
@@ -982,7 +964,7 @@ function carregarDoHistorico(indice) {
                     cabecalho: rom.cabecalho
                 })
             }).catch(() => {});
-        }, 100); // pequeno delay para garantir que a tabela já está no DOM
+        }, 100);
     }
 }
 
