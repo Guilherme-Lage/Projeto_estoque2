@@ -2,7 +2,7 @@ let totalItens = 0;
 let conferidos = 0;
 let mostrarApenasPendentes = true;
 let modoSubtrair = false;
-
+let estadoFiltro = 0;
 // ─── ESTADO GLOBAL DO CABEÇALHO ──────────────────────────────────────────────
 // Guardamos o cabeçalho em um objeto global para não depender de querySelector frágil
 let cabecalhoAtual = {
@@ -470,14 +470,27 @@ async function filtrarTabela() {
     const busca = document.getElementById('busca-codigo').value.toLowerCase().trim();
     const linhas = document.querySelectorAll('#corpo-tabela tr');
 
+    // --- PARTE 1: LÓGICA DO CICLO DE 3 ESTADOS (Quando a busca está vazia) ---
     if (busca === '') {
         linhas.forEach(linha => {
             if (linha.querySelector('.estado-vazio')) return;
-            linha.style.display = (mostrarApenasPendentes && linha.classList.contains('linha-conferida')) ? 'none' : '';
+            
+            // Verifica se a linha está pronta (conferida ou com excesso)
+            const concluido = linha.classList.contains('linha-conferida') || 
+                             linha.classList.contains('linha-excesso');
+
+            if (estadoFiltro === 0) { // OCULTAR CONFERIDOS
+                linha.style.display = concluido ? 'none' : '';
+            } else if (estadoFiltro === 1) { // MOSTRAR SÓ CONFERIDOS
+                linha.style.display = concluido ? '' : 'none';
+            } else { // MOSTRAR TODOS (Estado 2)
+                linha.style.display = '';
+            }
         });
         return;
     }
 
+    // --- PARTE 2: SUA BUSCA INTELIGENTE (Quando tem texto) ---
     const buscaEhNumero = /^\d+$/.test(busca);
     let codigoTraduzido = busca;
 
@@ -486,6 +499,7 @@ async function filtrarTabela() {
             const resposta = await fetch(`${window.location.origin}/buscar-produto/${busca}`);
             if (resposta.ok) {
                 const produtos = await resposta.json();
+                // Pega o código interno do banco para comparar na tabela
                 codigoTraduzido = produtos[0].ITEM_ESTOQUE_PUB.toString().toLowerCase().trim();
             }
         } catch (err) { console.error('Erro no banco:', err); }
@@ -493,14 +507,19 @@ async function filtrarTabela() {
 
     linhas.forEach(linha => {
         if (linha.querySelector('.estado-vazio')) return;
+        
         const textoCodigo = linha.querySelector('.col-codigo')?.innerText.toLowerCase().trim() || '';
         const textoDescricao = linha.querySelector('.col-descricao')?.innerText.toLowerCase() || '';
+        
         let corresponde = false;
         if (buscaEhNumero) {
-            corresponde = textoCodigo.includes(codigoTraduzido);
+            // Se for número, tenta bater com o código original ou o traduzido do EAN
+            corresponde = textoCodigo.includes(codigoTraduzido) || textoCodigo.includes(busca);
         } else {
             corresponde = textoDescricao.includes(busca);
         }
+
+        // Na busca, sempre mostramos o item independente do estado (concluído ou não)
         linha.style.display = corresponde ? '' : 'none';
     });
 }
@@ -508,7 +527,6 @@ async function filtrarTabela() {
 document.getElementById('busca-codigo').addEventListener('keydown', async function (e) {
     if (e.key !== 'Enter') return;
     e.preventDefault();
-    dispararBusca(this, this.value);
 
     const termoBusca = this.value.trim();
     if (termoBusca === '') return;
@@ -516,55 +534,84 @@ document.getElementById('busca-codigo').addEventListener('keydown', async functi
     const linhas = document.querySelectorAll('#corpo-tabela tr');
 
     const marcarELimpar = (linha) => {
-        const cb = linha.querySelector('input[type="checkbox"]');
-        if (cb) {
-            cb.checked = true;
-            marcarItem(parseInt(cb.id.split('-')[1]), true);
-            this.value = '';
-            document.querySelectorAll('#corpo-tabela tr').forEach(tr => {
-                if (!tr.querySelector('.estado-vazio')) tr.style.display = '';
-            });
-            setTimeout(() => linha.scrollIntoView({ behavior: 'smooth', block: 'center' }), 100);
-            return true;
-        }
-        return false;
+        const idx = linha.id.replace('linha-', '');
+        const spanCont = document.getElementById(`cont-item-${idx}`);
+        // Pega o total da quantidade (ex: o 4 do "0 / 4")
+        const textoQtd = spanCont?.parentElement?.textContent || "0 / 1";
+        const totalMax = parseInt(textoQtd.split('/')[1]) || 1;
+
+        incrementarItem(idx, totalMax);
+        
+        this.value = '';
+        if (typeof filtrarTabela === 'function') filtrarTabela();
+        
+        setTimeout(() => linha.scrollIntoView({ behavior: 'smooth', block: 'center' }), 100);
+        return true;
     };
 
+    // 1. Busca rápida por código interno na tabela
     for (let linha of linhas) {
         if (linha.querySelector('.col-codigo')?.innerText.trim() === termoBusca) {
-            marcarELimpar(linha);
-            return;
+            return marcarELimpar(linha);
         }
     }
 
+    // 2. Busca no Banco de Dados (Tratando Array de Duplicados)
     try {
         const resposta = await fetch(`${window.location.origin}/buscar-produto/${termoBusca}`);
+        
         if (resposta.ok) {
-            const produto = await resposta.json();
-            const codigoReal = produto[0].ITEM_ESTOQUE_PUB.toString().trim();
-            let achou = false;
-            for (let linha of linhas) {
-                if (linha.querySelector('.col-codigo')?.innerText.trim() === codigoReal) {
-                    achou = marcarELimpar(linha);
-                    break;
+            const produtosNoBanco = await resposta.json(); // Recebe a LISTA
+
+            // Filtra quais desses produtos do banco estão na tabela agora
+            let candidatosNoRomaneio = [];
+            
+            produtosNoBanco.forEach(prod => {
+                const codInterno = prod.ITEM_ESTOQUE_PUB.toString().trim();
+                for (let linha of linhas) {
+                    if (linha.querySelector('.col-codigo')?.innerText.trim() === codInterno) {
+                        candidatosNoRomaneio.push({ info: prod, elemento: linha });
+                    }
                 }
-            }
-            if (!achou) {
-                alert(`Produto [${produto[0].DES_ITEM_ESTOQUE}] fora do romaneio!`);
+            });
+
+            if (candidatosNoRomaneio.length === 1) {
+                // Achou apenas um match no romaneio
+                marcarELimpar(candidatosNoRomaneio[0].elemento);
+            } 
+            else if (candidatosNoRomaneio.length > 1) {
+                // DUPLICIDADE: Mais de um item do romaneio tem esse mesmo EAN
+                let msg = "⚠️ Código duplicado no romaneio! Escolha:\n\n";
+                candidatosNoRomaneio.forEach((c, i) => {
+                    msg += `${i + 1} - ${c.info.DES_ITEM_ESTOQUE} (${c.info.ITEM_ESTOQUE_PUB})\n`;
+                });
+                
+                const escolha = prompt(msg + "\nDigite o número da opção:");
+                const selecao = candidatosNoRomaneio[parseInt(escolha) - 1];
+                
+                if (selecao) {
+                    marcarELimpar(selecao.elemento);
+                } else {
+                    this.value = '';
+                }
+            } 
+            else {
+                // O produto existe no banco, mas NENHUM deles está no romaneio
+                alert(`Produto fora do romaneio!\n(EAN: ${termoBusca})`);
                 this.value = '';
-                filtrarTabela();
+                if (typeof filtrarTabela === 'function') filtrarTabela();
             }
         } else {
-            alert('Código não encontrado!');
+            alert('Código não cadastrado no sistema!');
             this.value = '';
-            filtrarTabela();
         }
     } catch (err) {
-        alert('Código não encontrado no romaneio!');
+        console.error("Erro na busca:", err);
         this.value = '';
-        filtrarTabela();
     }
 });
+
+
 
 document.getElementById('busca-codigo').addEventListener('input', function () {
     const valor = this.value.trim();
@@ -585,53 +632,112 @@ async function dispararBusca(input, termoBusca) {
     const termo = termoBusca.trim();
     if (!termo) return;
 
-    let linhaEncontrada = null;
+    let candidatos = [];
 
+    // 1. Busca direta na tabela pelo código interno
     for (let linha of linhas) {
         if (linha.querySelector('.col-codigo')?.innerText.trim() === termo) {
-            linhaEncontrada = linha;
-            break;
+            candidatos.push({ elemento: linha });
+            break; // Se achou o código exato, não precisa ir no banco
         }
     }
 
-    if (!linhaEncontrada) {
+    // 2. Se não achou o código exato, busca o EAN no Banco de Dados
+    if (candidatos.length === 0) {
         try {
             const res = await fetch(`${window.location.origin}/buscar-produto/${termo}`);
             if (res.ok) {
-                const produtos = await res.json();
-                const codigoReal = produtos[0].ITEM_ESTOQUE_PUB.toString().trim();
-                for (let linha of linhas) {
-                    if (linha.querySelector('.col-codigo')?.innerText.trim() === codigoReal) {
-                        linhaEncontrada = linha;
-                        break;
+                const produtosDoBanco = await res.json(); // Recebe a LISTA de duplicados
+                
+                // Cruza os produtos do banco com o que está na tabela
+                produtosDoBanco.forEach(prod => {
+                    const codInterno = prod.ITEM_ESTOQUE_PUB.toString().trim();
+                    for (let linha of linhas) {
+                        if (linha.querySelector('.col-codigo')?.innerText.trim() === codInterno) {
+                            candidatos.push({ elemento: linha, info: prod });
+                        }
                     }
-                }
+                });
             }
-        } catch (e) { console.log('Erro banco'); }
+        } catch (e) { console.log('Erro ao consultar banco'); }
     }
 
-    if (linhaEncontrada) {
-        const idx = linhaEncontrada.id.replace('linha-', '');
-        const spanCont = document.getElementById(`cont-item-${idx}`);
-        const totalMax = parseInt(spanCont.parentElement.textContent.split('/')[1]);
-        incrementarItem(idx, totalMax);
-        input.value = '';
-        linhaEncontrada.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        if (navigator.vibrate) navigator.vibrate(100);
-    } else {
+    // --- LÓGICA DE DECISÃO ---
+
+    if (candidatos.length === 1) {
+        // CASO NORMAL: Apenas um item encontrado
+        processarLinhaEncontrada(candidatos[0].elemento, input);
+    } 
+    else if (candidatos.length > 1) {
+        // CASO DUPLICADO: Abre menu de escolha
+        let msg = "⚠️ Código duplicado no romaneio! Escolha:\n\n";
+        candidatos.forEach((c, i) => {
+            const desc = c.info?.DES_ITEM_ESTOQUE || c.elemento.querySelector('.col-descricao').innerText;
+            msg += `${i + 1} - ${desc}\n`;
+        });
+        
+        const escolha = prompt(msg + "\nDigite o número da opção:");
+        const selecao = candidatos[parseInt(escolha) - 1];
+        
+        if (selecao) {
+            processarLinhaEncontrada(selecao.elemento, input);
+        } else {
+            input.value = '';
+        }
+    } 
+    else {
+        // NÃO ACHOU EM LUGAR NENHUM
         alert('Produto não está neste romaneio!');
         input.value = '';
     }
 }
 
+// Função auxiliar para marcar e dar scroll
+function processarLinhaEncontrada(linha, input) {
+    const idx = linha.id.replace('linha-', '');
+    const spanCont = document.getElementById(`cont-item-${idx}`);
+    // Pega o total da quantidade (ex: o 4 do "0 / 4")
+    const totalMax = parseInt(spanCont.parentElement.textContent.split('/')[1]);
+    
+    incrementarItem(idx, totalMax);
+    
+    input.value = '';
+    linha.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    if (navigator.vibrate) navigator.vibrate(100);
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // VISIBILIDADE / ALTERNAR PENDENTES
 // ─────────────────────────────────────────────────────────────────────────────
-
 function alternarVisibilidade() {
-    mostrarApenasPendentes = !mostrarApenasPendentes;
+    // 1. Gira o estado (0 -> 1 -> 2 -> 0...)
+    estadoFiltro++;
+    if (estadoFiltro > 2) estadoFiltro = 0;
+
     const btn = document.getElementById('btn-ocultar');
-    if (btn) btn.textContent = mostrarApenasPendentes ? 'Mostrar Todos' : 'Ocultar Conferidos';
+    if (!btn) return;
+
+    // 2. Muda o visual do botão para confirmar o clique
+    switch (estadoFiltro) {
+        case 0:
+            btn.textContent = "Ocultar Conferidos";
+            btn.style.backgroundColor = "#00009C"; // Azul
+            btn.style.color = "#fff";
+            break;
+        case 1:
+            btn.textContent = "Mostrar Conferidos";
+            btn.style.backgroundColor = "#2d7a4a"; // Verde
+            btn.style.color = "#fff";
+            break;
+        case 2:
+            btn.textContent = "Mostrar Todos";
+            btn.style.backgroundColor = "#ffffff"; // Branco
+            btn.style.color = "#00009C";
+            btn.style.border = "1px solid #00009C";
+            break;
+    }
+
+    // 3. CHAMA O FILTRO (A função que você me mandou acima)
     filtrarTabela();
 }
 
@@ -1229,5 +1335,22 @@ function alternarModoEdicao() {
         btn.style.backgroundColor = ""; 
         btn.style.color = "";
         console.log("Voltou ao modo normal.");
+    }
+}
+
+function exibirMenuDuplicidade(produtos, termoOriginal) {
+    // Cria um alerta customizado ou usa o prompt
+    let mensagem = "⚠️ Código duplicado! Escolha o item correto:\n\n";
+    produtos.forEach((p, i) => {
+        mensagem += `${i + 1} - ${p.DES_ITEM_ESTOQUE} (Cód: ${p.ITEM_ESTOQUE_PUB})\n`;
+    });
+    
+    const escolha = prompt(mensagem + "\nDigite o número da opção:");
+    const index = parseInt(escolha) - 1;
+
+    if (produtos[index]) {
+        processarBipeUnico(produtos[index].ITEM_ESTOQUE_PUB);
+    } else {
+        alert("Seleção cancelada.");
     }
 }
