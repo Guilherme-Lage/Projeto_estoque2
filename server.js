@@ -11,7 +11,7 @@ const port = 3000;
 
 app.use(cors());
 app.use(express.json({ limit: '50mb' }));
-app.use(express.static(path.resolve(__dirname))); 
+app.use(express.static(path.resolve(__dirname)));
 
 // --- BANCO DE DADOS ---
 const dbPath = path.resolve(__dirname, 'oficina.db');
@@ -45,10 +45,10 @@ db.serialize(() => {
     )`);
 
     // Migração segura: adiciona colunas novas se a tabela já existia sem elas
-    db.run(`ALTER TABLE romaneios ADD COLUMN total_itens INTEGER`, () => {});
-    db.run(`ALTER TABLE romaneios ADD COLUMN conferidos INTEGER`, () => {});
-    db.run(`ALTER TABLE romaneios ADD COLUMN txt_formatado TEXT`, () => {});
-    db.run(`ALTER TABLE romaneios ADD COLUMN cabecalho_json TEXT`, () => {});
+    db.run(`ALTER TABLE romaneios ADD COLUMN total_itens INTEGER`, () => { });
+    db.run(`ALTER TABLE romaneios ADD COLUMN conferidos INTEGER`, () => { });
+    db.run(`ALTER TABLE romaneios ADD COLUMN txt_formatado TEXT`, () => { });
+    db.run(`ALTER TABLE romaneios ADD COLUMN cabecalho_json TEXT`, () => { });
 });
 
 // --- ROTAS ---
@@ -125,7 +125,7 @@ app.get('/romaneio/:id', (req, res) => {
     db.get("SELECT * FROM romaneios WHERE id = ?", [id], (err, row) => {
         if (err) return res.status(500).json({ erro: err.message });
         if (!row) return res.status(404).json({ mensagem: "Não encontrado" });
-        
+
         // Enviamos o registro completo do banco (que já tem o itens_json com as quantidades)
         res.json(row);
     });
@@ -177,7 +177,7 @@ app.get('/copiar-romaneio', (req, res) => {
 
 // 2. A rota que o CELULAR chama (O que deu erro 404)
 let romaneioAtivo = null;
-let conferenciasAtivas = {}; 
+let conferenciasAtivas = {};
 
 app.post('/definir-ativo', (req, res) => {
     const { id, cabecalho, itens } = req.body;
@@ -216,13 +216,13 @@ app.get('/obter-ativo', (req, res) => {
 
 app.post('/sincronizar-checks', (req, res) => {
     const { id, checks, cabecalho } = req.body;
-    
+
     // Se vier cabeçalho novo, a gente guarda. Se não, mantém o que já tinha.
     if (!conferenciasAtivas[id]) conferenciasAtivas[id] = {};
-    
+
     conferenciasAtivas[id].checks = checks;
     if (cabecalho) conferenciasAtivas[id].cabecalho = cabecalho;
-    
+
     res.json({ ok: true });
 });
 
