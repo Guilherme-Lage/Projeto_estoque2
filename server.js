@@ -148,7 +148,6 @@ app.get('/executar-python', (req, res) => {
     res.json({ mensagem: 'iniciado' });
 });
 
-// 6. Abre o Bloco de Notas, copia e fecha a aba — usa VBS para permissão de janela
 app.get('/copiar-romaneio', (req, res) => {
     const scriptPath = path.resolve(__dirname, 'copiar_romaneio.py');
     const tempFile = path.join(os.tmpdir(), 'romaneio_copiado.txt');
@@ -228,9 +227,31 @@ app.get('/status-checks/:id', (req, res) => {
     res.json(conferenciasAtivas[req.params.id] || { checks: {}, cabecalho: null });
 });
 
-// --- INICIALIZAÇÃO ---
+
+function getLocalIp() {
+    const interfaces = os.networkInterfaces();
+    for (let name in interfaces) {
+        for (let iface of interfaces[name]) {
+            if (iface.family === 'IPv4' && !iface.internal) {
+                return iface.address;
+            }
+        }
+    }
+    return 'localhost';
+}
+
+const IP_LOCAL = getLocalIp();
+
 app.listen(port, '0.0.0.0', () => {
-    console.log(`\n✅ Servidor Hontec Ativo!`);
-    console.log(`💻 Local: http://localhost:${port}`);
-    console.log(`📱 Celular: Use o IP do seu PC na porta ${port}`);
+    const urlLocal = `http://localhost:${port}`;
+    const urlRede = `http://${IP_LOCAL}:${port}`;
+
+    console.log(`\n=================================================`);
+    console.log(`✅  SERVIDOR HONTEC ATIVO!`);
+    console.log(`💻  ACESSO NO PC: ${urlLocal}`);
+    console.log(`📱  ACESSO NO CELULAR: ${urlRede}`);
+    console.log(`=================================================\n`);
+
+    const comando = process.platform === 'win32' ? 'start' : 'open';
+    exec(`${comando} ${urlRede}`);
 });
