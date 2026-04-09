@@ -117,17 +117,14 @@ app.get("/romaneios", (req, res) => {
 });
 
 // 5b. Buscar txt de romaneio especifico
-app.get("/romaneio-txt/:id", (req, res) => {
-    db.get("SELECT txt_formatado FROM romaneios WHERE id = ?", [req.params.id], (err, row) => {
-        if (err) return res.status(500).send(err.message);
-        if (!row) return res.status(404).send("Não encontrado");
-
-        // 1. Define que o conteúdo é TEXTO PURO (não JSON)
-        // 2. Define o Charset UTF-8 para não bugar acentos
-        res.setHeader('Content-Type', 'text/plain; charset=utf-8');
-
-        // 3. Envia APENAS a string formatada, sem as chaves do JSON
-        res.send(row.txt_formatado);
+app.get('/romaneio/:id', (req, res) => {
+    const id = req.params.id;
+    db.get("SELECT * FROM romaneios WHERE id = ?", [id], (err, row) => {
+        if (err) return res.status(500).json({ erro: err.message });
+        if (!row) return res.status(404).json({ mensagem: "Não encontrado" });
+        
+        // Enviamos o registro completo do banco (que já tem o itens_json com as quantidades)
+        res.json(row);
     });
 });
 

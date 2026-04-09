@@ -1,6 +1,7 @@
 let totalItens = 0;
 let conferidos = 0;
 let mostrarApenasPendentes = true;
+let modoSubtrair = false;
 
 // ─── ESTADO GLOBAL DO CABEÇALHO ──────────────────────────────────────────────
 // Guardamos o cabeçalho em um objeto global para não depender de querySelector frágil
@@ -22,7 +23,7 @@ let ultimoHashChecks = '';
 let enviandoCheck = false;
 
 // ─────────────────────────────────────────────────────────────────────────────
-// HELPERS
+// Ajudantes
 // ─────────────────────────────────────────────────────────────────────────────
 
 function renderizarCabecalho(cab) {
@@ -121,43 +122,17 @@ function processarTexto(texto) {
     document.getElementById('info-romaneio').textContent = `Romaneio N°: ${nRomaneio} | Itens: ${totalItens}`;
 
     corpoTabela.innerHTML = '';
-    itens.forEach((item, idx) => {
+     itens.forEach((item, idx) => {
         const tr = document.createElement('tr');
         tr.id = `linha-${idx}`;
         const valorQtdTotal = parseInt(item.qtd);
         const classeDestaque = valorQtdTotal > 1 ? 'qtd-multipla' : '';
-        
-        // --- LOGICA DE CLIQUE E EDIÇÃO ---
-        let timerToque;
-        let foiCliqueLongo = false;
 
-        // Clique Normal (Soma +1)
+        // Simplificado: Apenas o clique que chama a função principal
+        // A função incrementarItem agora decide sozinha se soma ou subtrai
         tr.addEventListener('click', () => {
-            if (foiCliqueLongo) {
-                foiCliqueLongo = false;
-                return;
-            }
             incrementarItem(idx, valorQtdTotal);
         });
-
-        // Botão Direito (PC: Subtrai -1)
-        tr.addEventListener('contextmenu', (e) => {
-            e.preventDefault();
-            subtrairItem(idx, valorQtdTotal);
-        });
-
-        // Toque Longo (Celular: Subtrai -1)
-        tr.addEventListener('touchstart', () => {
-            foiCliqueLongo = false;
-            timerToque = setTimeout(() => {
-                foiCliqueLongo = true;
-                subtrairItem(idx, valorQtdTotal);
-                if (navigator.vibrate) navigator.vibrate(80);
-            }, 800);
-        }, { passive: true });
-
-        tr.addEventListener('touchend', () => clearTimeout(timerToque));
-        tr.addEventListener('touchmove', () => clearTimeout(timerToque));
 
         tr.style.cursor = 'pointer';
         tr.innerHTML = `
@@ -197,7 +172,12 @@ function incrementarItem(idx, totalMaximo) {
     const checkbox = document.getElementById(`chk-${idx}`);
 
     let valorAtual = parseInt(spanContador.getAttribute('data-atual'));
-
+      
+      if (modoSubtrair) {
+        subtrairItem(idx, totalMaximo);
+        return;
+    }
+    
     if (valorAtual >= totalMaximo) {
         if (alert(`⚠️Atenção: \n Foi colocado uma peça a mais favor devolver`)) {
             valorAtual++;
@@ -454,12 +434,12 @@ async function sincronizarComBanco(id) {
             {
                 nRomaneio: id,
                 dataHora: romaneio.data || '---',
-                requisitante: '---',
-                contato: '---',
-                os: '---',
-                placa: '---',
+                requisitante: romaneio.requisitante || '---',
+                contato: romaneio.contato || '---',
+                os: romaneio.os || '---',
+                placa: romaneio.placa || '---' ,
                 cliente: romaneio.cliente || '---',
-                modelo: '---'
+                modelo: romaneio.modelo || '---'
             };
 
         const registroParaHistorico = {
@@ -1191,6 +1171,7 @@ function aplicarMudancaLocal(idx, valor, total) {
     atualizarContadorGeral();
 }
 
+
 function subtrairItem(idx, totalMaximo, manual = true) {
     const spanContador = document.getElementById(`cont-item-${idx}`);
     const linha = document.getElementById(`linha-${idx}`);
@@ -1198,22 +1179,55 @@ function subtrairItem(idx, totalMaximo, manual = true) {
     const checkbox = document.getElementById(`chk-${idx}`);
 
     let valorAtual = parseInt(spanContador.getAttribute('data-atual'));
-
-    // Só subtrai se for maior que 0
+    
+ 
     if (valorAtual > 0) {
         valorAtual--;
     } else {
-        return; // Não faz nada se já for 0
+        return; 
     }
 
     spanContador.textContent = valorAtual;
     spanContador.setAttribute('data-atual', valorAtual);
 
-    // Atualiza o visual (Cores e Ícones)
     atualizarVisualItem(idx, valorAtual, totalMaximo);
     atualizarContadorGeral();
 
     if (manual) {
-        sincronizarClique(); // Avisa o outro aparelho da correção
+        sincronizarClique();
+    }
+}
+
+
+function alternarModoEdicao() {
+    // Se o modo atual for SOMAR, pede senha para entrar no modo CORRIGIR
+    if (!modoSubtrair) {
+        const senha = prompt("Digite a senha para habilitar a correção:");
+        
+        if (senha === "1234") { // <--- Alterar senha 
+            modoSubtrair = true;
+        } else {
+            alert("Senha incorreta! Acesso negado.");
+            return; // Sai da função sem mudar nada
+        }
+    } else {
+        // Para voltar ao modo SOMAR, não precisa de senha
+        modoSubtrair = false;
+    }
+    
+    
+    const btn = document.getElementById('btn-modo-edicao');
+    if (!btn) return;
+
+    if (modoSubtrair) {
+        btn.textContent = "Modo: Corrigir";
+        btn.style.backgroundColor = "#ff4444";
+        btn.style.color = "white";
+        console.log(" Modo de correção ativado.");
+    } else {
+        btn.textContent = "Modo: Somar";
+        btn.style.backgroundColor = ""; 
+        btn.style.color = "";
+        console.log("Voltou ao modo normal.");
     }
 }
