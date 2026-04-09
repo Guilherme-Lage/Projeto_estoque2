@@ -1,4 +1,4 @@
-    @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap');
 
     * {
         box-sizing: border-box;
@@ -258,7 +258,11 @@
         body {
             padding: 16px 10px;
         }
-
+         
+       #copiarromaneio{
+        display: none;
+       }
+        
         #contagem-conferidos {
             margin-left: 1%;
             padding-left: 0%;
@@ -276,73 +280,87 @@
             padding: 14px;
         }
 
-
         thead {
             display: none;
         }
 
-
+        /* ── LAYOUT MOBILE: 2 linhas ───────────────────────────────
+           Linha 1: [Local]  [Qtd]  [Status]
+           Linha 2: [Código — Descrição]
+        ─────────────────────────────────────────────────────────── */
         tbody tr {
             display: grid;
-            grid-template-columns: 1fr 1fr;
+            grid-template-columns: 1fr auto auto;
             grid-template-areas:
-                "locacao codigo"
-                "desc desc"
-                "qtd check";
-            padding: 12px;
+                "locacao qtd check"
+                "info   info info";
+            padding: 10px 12px;
             border-bottom: 2px solid #1a1a1a;
-            gap: 8px;
+            gap: 10px 10px;
+            align-items: center;
+            height: 11vh;
         }
-
 
         td {
             display: block;
-            padding: 2px !important;
+            padding: 0 !important;
             border: none !important;
         }
 
         td.col-locacao {
             grid-area: locacao;
-            font-weight: bold;
-        }
-
-        td.col-codigo {
-            grid-area: desc;
-            text-align: left;
+            font-size: 14px; 
+             font-weight: 600;
             align-self: center;
         }
-
-        td.col-descricao {
-            grid-area: desc;
-            font-weight: 600;
-            margin: 4px 0;
-            text-align: right;
-        }
-
-        td.col-qtd {
-            grid-area: qtd;
-            text-align: left;
-            font-size: 16px;
-        }
-
-        td.col-check {
-            margin-left: 40%;
-            grid-area: check;
-            text-align: right;
-        }
-
 
         td.col-locacao::before {
             content: "Local: ";
             font-weight: bold;
         }
 
-        td.col-qtd::before {
-            content: "Qtd: ";
-            font-weight: bold;
+        td.col-qtd {
+            grid-area: qtd;
+            text-align: center;
+            font-size: 15px;
+            font-weight: 700;
+            align-self: center;
         }
 
+        td.col-qtd::before {
+            content: none;
+        }
 
+        td.col-check {
+            grid-area: check;
+            text-align: right;
+            align-self: center;
+            margin-left: 0;
+        }
+
+        /* Linha 2: código + descrição lado a lado */
+        td.col-codigo {
+            grid-area: info;
+            display: inline;
+            font-size: 12px;
+            font-weight: 700;
+        }
+
+        td.col-descricao {
+            grid-area: info;
+            display: inline;
+            font-size: 13px;
+            font-weight: 500;
+            margin: 0;
+            text-align: right;
+        }
+
+        /* Junta código e descrição na mesma célula visual */
+        td.col-codigo::after {
+            content: " — ";
+            color: #bbb;
+            font-weight: 400;
+        }
     }
 
     .envoltório-tabela {
